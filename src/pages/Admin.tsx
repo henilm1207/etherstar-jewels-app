@@ -1087,7 +1087,7 @@ export default function Admin() {
                         <button
                           key={s}
                           type="button"
-                          onClick={(e) => { e.stopPropagation(); updateInquiryStatus({ inquiryId: inq._id, status: s }); }}
+                          onClick={(e) => { e.stopPropagation(); updateInquiryStatus({ inquiryId: inq._id as Id<"inquiries">, status: s }); }}
                           disabled={inq.status === s}
                           className={`text-[10px] px-3 py-1 rounded-full border transition-all ${
                             inq.status === s ? "border-[#D4AF37] bg-[#D4AF37]/5 text-[#D4AF37]" : "border-[#E5E2DD] text-[#1A202C]/30 hover:border-[#1A202C]/20"

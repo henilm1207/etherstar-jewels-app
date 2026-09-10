@@ -7,18 +7,19 @@ import { useParams, Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
+  ArrowRight,
   ChevronLeft,
   ChevronRight,
   Diamond,
-  Shield,
   Award,
-  Leaf,
+  MessageCircle,
   ZoomIn,
   Heart,
 } from "lucide-react";
 import { getMetalPrice, sortMetalOptions } from "@/lib/metals";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
+import { SafeImage } from "@/components/SafeImage";
 
 const SIZES_BY_CATEGORY: Record<string, string[]> = {
   Rings: ["5", "5.5", "6", "6.5", "7", "7.5", "8", "8.5", "9"],
@@ -193,24 +194,24 @@ export default function ProductDetail() {
       minimumFractionDigits: 0,
     }).format(price);
 
-  const sizeLabel = product.sizeType ?? (product.category === "Rings" ? "Ring Size" : "Size");
+  const sizeLabel = product.sizeType ?? "Size";
   const sizes = product.size
     ? [product.size]
     : SIZES_BY_CATEGORY[product.category] || DEFAULT_SIZES;
 
   const fourCs = [
     ...(product.diamondType
-      ? [{ label: "Diamond", value: product.diamondType, icon: "◇" }]
+      ? [{ label: "Diamond", value: product.diamondType }]
       : []),
-    { label: "Carat", value: product.carat.toString(), icon: "⚖️" },
+    { label: "Carat", value: product.carat.toString() },
     ...(product.weightGrams !== undefined
-      ? [{ label: "Weight", value: `${product.weightGrams} g`, icon: "◈" }]
+      ? [{ label: "Weight", value: `${product.weightGrams} g` }]
       : []),
-    { label: "Cut", value: product.cut, icon: "✨" },
-    { label: "Color", value: product.color, icon: "💎" },
-    { label: "Clarity", value: product.clarity, icon: "🔍" },
+    { label: "Cut", value: product.cut },
+    { label: "Color", value: product.color },
+    { label: "Clarity", value: product.clarity },
     ...(product.settingType
-      ? [{ label: "Setting", value: product.settingType, icon: "◌" }]
+      ? [{ label: "Setting", value: product.settingType }]
       : []),
   ];
 
@@ -267,7 +268,7 @@ export default function ProductDetail() {
               onMouseEnter={() => setIsZooming(true)}
               onMouseLeave={() => setIsZooming(false)}
             >
-              <img
+              <SafeImage
                 src={images[activeImageIdx] || images[0] || ""}
                 alt={`${product.name} — angle ${activeImageIdx + 1}`}
                 loading="eager"
@@ -350,7 +351,7 @@ export default function ProductDetail() {
                         : "border-transparent opacity-60 hover:opacity-100 hover:border-[#E5E2DD]"
                     }`}
                   >
-                    <img
+                    <SafeImage
                       src={img}
                       alt={`Thumbnail ${i + 1}`}
                       loading="lazy"
@@ -419,7 +420,6 @@ export default function ProductDetail() {
                   key={c.label}
                   className="bg-white rounded-xl border border-[#E5E2DD] p-3 text-center hover:border-[#D4AF37]/30 transition-colors duration-300"
                 >
-                  <div className="text-lg mb-1">{c.icon}</div>
                   <div className="text-[10px] uppercase tracking-wider text-[#1A202C]/30 mb-0.5">
                     {c.label}
                   </div>
@@ -455,9 +455,14 @@ export default function ProductDetail() {
 
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-semibold uppercase tracking-wider text-[#1A202C]/40">
-                    {sizeLabel}
-                  </label>
+                  <div>
+                    <label className="text-xs font-semibold uppercase tracking-wider text-[#1A202C]/40">
+                      {product.category === "Rings" ? "Select your size" : `Select your ${sizeLabel.toLowerCase()}`}
+                    </label>
+                    <p className="mt-1 text-[11px] text-[#1A202C]/30">
+                      Choose the fit that feels right
+                    </p>
+                  </div>
                   {product.category === "Rings" && (
                     <button
                       type="button"
@@ -527,41 +532,23 @@ export default function ProductDetail() {
               </div>
             )}
 
-            {/* Trust Badges */}
-            <div className="mt-8 pt-8 border-t border-[#E5E2DD] grid grid-cols-3 gap-4">
-              <div className="flex items-start gap-3">
-                <Shield className="h-5 w-5 text-[#D4AF37]/70 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-[#1A202C]/60">
-                    Lifetime Warranty
-                  </p>
-                  <p className="text-[11px] text-[#1A202C]/30 mt-0.5">
-                    Full coverage on craftsmanship
-                  </p>
+            {/* WhatsApp Business contact */}
+            <div className="mt-8 pt-8 border-t border-[#E5E2DD]">
+              <a
+                href={`https://wa.me/919725756046?text=${encodeURIComponent(`Hi Etherstar Jewels, I would like to know more about ${product.name}.`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-4 rounded-xl border border-[#25D366]/30 bg-[#25D366]/[0.06] px-4 py-4 transition-colors hover:border-[#25D366]/60 hover:bg-[#25D366]/[0.1]"
+              >
+                <div className="flex items-center gap-3">
+                  <MessageCircle className="h-5 w-5 shrink-0 text-[#1A9E4B]" />
+                  <div>
+                    <p className="text-sm font-medium text-[#1A202C]">Chat with us on WhatsApp</p>
+                    <p className="mt-0.5 text-xs text-[#1A202C]/45">Ask about this piece, sizing, or availability</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Award className="h-5 w-5 text-[#D4AF37]/70 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-[#1A202C]/60">
-                    IGI Certified
-                  </p>
-                  <p className="text-[11px] text-[#1A202C]/30 mt-0.5">
-                    Independently graded diamond
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <Leaf className="h-5 w-5 text-[#D4AF37]/70 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-xs font-medium text-[#1A202C]/60">
-                    Eco-Friendly
-                  </p>
-                  <p className="text-[11px] text-[#1A202C]/30 mt-0.5">
-                    Zero mining, zero conflict
-                  </p>
-                </div>
-              </div>
+                <ArrowRight className="h-4 w-4 shrink-0 text-[#1A9E4B]" />
+              </a>
             </div>
 
             <div className="mt-auto pt-8">

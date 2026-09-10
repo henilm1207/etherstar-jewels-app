@@ -7,6 +7,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
 import type { Id } from "../convex/_generated/dataModel";
+import { SafeImage } from "@/components/SafeImage";
 
 interface MetalOption {
   metalType: string;
@@ -130,7 +131,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
           }
           onMouseLeave={() => setHoveredImage(0)}
         >
-          <img
+          <SafeImage
             src={displayImage}
             alt={product.name}
             loading="lazy"

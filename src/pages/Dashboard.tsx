@@ -13,6 +13,7 @@ import {
   ArrowRight,
   Award,
 } from "lucide-react";
+import { SafeImage } from "@/components/SafeImage";
 
 function WishlistSection({ id }: { id?: string }) {
   const wishlistedProducts = useQuery(api.wishlist.getWishlistedProducts);
@@ -77,7 +78,7 @@ function WishlistSection({ id }: { id?: string }) {
                 className="group block shrink-0 w-[200px] rounded-xl border border-[#E5E2DD] overflow-hidden hover:border-[#D4AF37]/30 hover:shadow-md transition-all duration-300"
               >
                 <div className="aspect-[4/5] bg-[#F0EDE8] overflow-hidden">
-                  <img
+                  <SafeImage
                     src={images[0] || (product as any).imageUrl || ""}
                     alt={(product as any).name}
                     loading="lazy"

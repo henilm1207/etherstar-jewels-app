@@ -4,6 +4,7 @@ import { Search, X, ArrowRight, Diamond } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
+import { SafeImage } from "@/components/SafeImage";
 
 interface SearchOverlayProps {
   open: boolean;
@@ -127,7 +128,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                               {/* Thumbnail */}
                               <div className="h-14 w-14 rounded-lg overflow-hidden bg-[#F0EDE8] shrink-0">
                                 {firstImage ? (
-                                  <img
+                                  <SafeImage
                                     src={firstImage}
                                     alt={product.name}
                                     loading="lazy"

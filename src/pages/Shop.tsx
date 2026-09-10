@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 import { getMetalPrice, sortMetalOptions } from "@/lib/metals";
+import { SafeImage } from "@/components/SafeImage";
 
 /* ── filter option lists ─────────────────────────────────────────────── */
 const METAL_TYPES = ["18k Gold", "14k Gold", "10k Gold", "Gold-Plated Silver"];
@@ -82,7 +83,7 @@ function ShopProductCard({
           onMouseEnter={() => setHoveredImage(Math.min(1, images.length - 1))}
           onMouseLeave={() => setHoveredImage(0)}
         >
-          <img
+          <SafeImage
             src={displayImage}
             alt={product.name}
             loading="lazy"

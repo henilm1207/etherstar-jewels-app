@@ -1,5 +1,6 @@
 import { Email } from "@convex-dev/auth/providers/Email";
 import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
+import { api } from "../_generated/api";
 
 /**
  * Email OTP provider for Etherstar Jewels.
@@ -9,8 +10,7 @@ import { RandomReader, generateRandomString } from "@oslojs/crypto/random";
  * Resend. Sign-in NEVER gets stuck waiting for an email:
  *
  * - If RESEND_API_KEY is missing or Resend rejects/times out, the exact error
- *   is logged, the fallback line "[Etherstar Auth Fallback] OTP for …" is
- *   emitted so the auth card can show a "Test Mode Code" badge.
+ *   is logged and the auth card shows the stored code as a fallback.
  * - sendVerificationRequest never throws, so the signIn mutation always
  *   resolves and the code the framework already stored remains usable.
  */
@@ -73,7 +73,16 @@ export const emailOtp = Email({
     return generateRandomString(random, alphabet, 6);
   },
 
-  async sendVerificationRequest({ identifier: email, token: otp }) {
+  async sendVerificationRequest(
+    { identifier: email, token: otp },
+    ...context: Array<{
+      runMutation: (
+        mutation: typeof api.otpFallback.record,
+        args: { email: string; code: string; delivered: boolean },
+      ) => Promise<unknown>;
+    }>
+  ) {
+    const mutationContext = context[0]!;
     console.log("════════════════════════════════════════════");
     console.log(`[Etherstar Auth] Preparing OTP email → to: ${email}`);
     console.log(`[Etherstar Auth] OTP code: ${otp}`);
@@ -89,6 +98,11 @@ export const emailOtp = Email({
         "[Etherstar Auth] RESEND_API_KEY is not configured — using test-mode fallback.",
       );
       console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
+      await mutationContext.runMutation(api.otpFallback.record, {
+        email,
+        code: otp,
+        delivered: false,
+      });
       return;
     }
 
@@ -134,6 +148,11 @@ export const emailOtp = Email({
       console.log(
         `[Etherstar Auth] OTP for ${email}: ${otp} (email sent successfully)`,
       );
+      await mutationContext.runMutation(api.otpFallback.record, {
+        email,
+        code: otp,
+        delivered: true,
+      });
     } catch (error) {
       console.error("Resend Error:", error);
       const message = error instanceof Error ? error.message : String(error);
@@ -141,7 +160,11 @@ export const emailOtp = Email({
         `[Etherstar Auth] Resend request failed: ${message}`,
       );
       console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
-      throw error;
+      await mutationContext.runMutation(api.otpFallback.record, {
+        email,
+        code: otp,
+        delivered: false,
+      });
     }
   },
 });

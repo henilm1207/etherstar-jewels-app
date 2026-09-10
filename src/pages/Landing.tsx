@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
+import { SafeImage } from "@/components/SafeImage";
 import { useQuery } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { Link } from "react-router";
@@ -16,6 +17,8 @@ import {
 
 export default function Landing() {
   const featured = useQuery(api.products.featured);
+  const allProducts = useQuery(api.products.list, {});
+  const homepageProducts = featured?.length ? featured : allProducts;
 
   return (
     <div className="min-h-screen bg-[#F9F8F6] text-[#1A202C]">
@@ -97,16 +100,7 @@ export default function Landing() {
             >
               <div className="relative">
                 <div className="aspect-[3/4] rounded-3xl overflow-hidden">
-                  <svg viewBox="0 0 800 1067" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-                    <defs>
-                      <linearGradient id="blur-hero-editorial" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#F0EDE8" />
-                        <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
-                      </linearGradient>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#blur-hero-editorial)" />
-                  </svg>
+                  <SafeImage src="/assets/hero-jewelry.jpg" alt="Fine jewelry collection" className="h-full w-full object-cover" />
                 </div>
                 {/* Floating accent card */}
                 <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-5 shadow-xl">
@@ -190,7 +184,7 @@ export default function Landing() {
             </p>
           </motion.div>
 
-          {featured === undefined ? (
+          {homepageProducts === undefined ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
               {[1, 2, 3].map((i) => (
                 <div
@@ -203,7 +197,7 @@ export default function Landing() {
                 </div>
               ))}
             </div>
-          ) : featured.length === 0 ? (
+          ) : homepageProducts.length === 0 ? (
             <div className="text-center py-20 text-[#1A202C]/30">
               <Diamond className="h-12 w-12 mx-auto mb-4 opacity-30" />
               <p className="text-sm">
@@ -212,8 +206,8 @@ export default function Landing() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {featured.slice(0, 6).map((product: { _id: string }, i: number) => (
-                <ProductCard key={product._id} product={product as any} index={i} />
+              {homepageProducts.slice(0, 6).map((product, i: number) => (
+                <ProductCard key={product._id} product={product} index={i} />
               ))}
             </div>
           )}
@@ -346,28 +340,10 @@ export default function Landing() {
               {/* Editorial imagery grid */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="aspect-square rounded-2xl overflow-hidden">
-                  <svg viewBox="0 0 400 400" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-                    <defs>
-                      <linearGradient id="blur-our-story-1" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#F0EDE8" />
-                        <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
-                      </linearGradient>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#blur-our-story-1)" />
-                  </svg>
+                  <SafeImage src="/assets/collection-ring.jpg" alt="Diamond ring detail" className="h-full w-full object-cover" />
                 </div>
                 <div className="aspect-square rounded-2xl overflow-hidden">
-                  <svg viewBox="0 0 400 400" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-                    <defs>
-                      <linearGradient id="blur-our-story-2" x1="0" y1="0" x2="1" y2="1">
-                        <stop offset="0%" stopColor="#F0EDE8" />
-                        <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
-                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
-                      </linearGradient>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#blur-our-story-2)" />
-                  </svg>
+                  <SafeImage src="/assets/jewelry-detail.jpg" alt="Gold jewelry detail" className="h-full w-full object-cover" />
                 </div>
               </div>
               {/* Stats grid */}
@@ -454,16 +430,7 @@ export default function Landing() {
               className="relative"
             >
               <div className="aspect-[4/5] rounded-3xl overflow-hidden">
-                <svg viewBox="0 0 800 1000" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
-                  <defs>
-                    <linearGradient id="blur-lab-grown" x1="0" y1="0" x2="1" y2="1">
-                      <stop offset="0%" stopColor="#F0EDE8" />
-                      <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
-                      <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
-                    </linearGradient>
-                  </defs>
-                  <rect width="100%" height="100%" fill="url(#blur-lab-grown)" />
-                </svg>
+                <SafeImage src="/assets/diamond-closeup.jpg" alt="Diamond close-up" className="h-full w-full object-cover" />
               </div>
               <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-5 shadow-xl">
                 <div className="flex items-center gap-3">
