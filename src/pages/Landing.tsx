@@ -28,15 +28,18 @@ export default function Landing() {
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-[#D4AF37]/[0.06] blur-[150px]" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] rounded-full bg-[#D4AF37]/[0.04] blur-[120px]" />
 
-        {/* Editorial diamond imagery overlay */}
+        {/* Editorial diamond imagery overlay - blur placeholder */}
         <div className="absolute inset-0 opacity-[0.07]">
-          <img
-            src="https://images.unsplash.com/photo-1605100804763-247f67b3557e?w=1600&q=80"
-            alt=""
-            loading="lazy"
-            decoding="async"
-            className="h-full w-full object-cover"
-          />
+          <svg viewBox="0 0 1600 900" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+            <defs>
+              <linearGradient id="blur-hero-bg" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#F0EDE8" />
+                <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
+              </linearGradient>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#blur-hero-bg)" />
+          </svg>
         </div>
 
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-24 pb-32 sm:pt-32 sm:pb-40">
@@ -94,16 +97,16 @@ export default function Landing() {
             >
               <div className="relative">
                 <div className="aspect-[3/4] rounded-3xl overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1602751584552-8ba73aad10e1?w=800&q=80"
-                    alt="Luxury diamond ring on display"
-                    loading="eager"
-                    fetchPriority="high"
-                    decoding="async"
-                    width={800}
-                    height={1067}
-                    className="h-full w-full object-cover"
-                  />
+                  <svg viewBox="0 0 800 1067" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+                    <defs>
+                      <linearGradient id="blur-hero-editorial" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#F0EDE8" />
+                        <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
+                      </linearGradient>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#blur-hero-editorial)" />
+                  </svg>
                 </div>
                 {/* Floating accent card */}
                 <div className="absolute -bottom-6 -left-6 bg-white rounded-2xl p-5 shadow-xl">
@@ -343,26 +346,28 @@ export default function Landing() {
               {/* Editorial imagery grid */}
               <div className="grid grid-cols-2 gap-4 mb-6">
                 <div className="aspect-square rounded-2xl overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1611085583191-a3b181a88401?w=400&q=80"
-                    alt="Diamond close-up"
-                    loading="lazy"
-                    decoding="async"
-                    width={400}
-                    height={400}
-                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-700"
-                  />
+                  <svg viewBox="0 0 400 400" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+                    <defs>
+                      <linearGradient id="blur-our-story-1" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#F0EDE8" />
+                        <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
+                      </linearGradient>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#blur-our-story-1)" />
+                  </svg>
                 </div>
                 <div className="aspect-square rounded-2xl overflow-hidden">
-                  <img
-                    src="https://images.unsplash.com/photo-1515562141589-67f0d93bae7f?w=400&q=80"
-                    alt="Ring stack"
-                    loading="lazy"
-                    decoding="async"
-                    width={400}
-                    height={400}
-                    className="h-full w-full object-cover hover:scale-105 transition-transform duration-700"
-                  />
+                  <svg viewBox="0 0 400 400" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+                    <defs>
+                      <linearGradient id="blur-our-story-2" x1="0" y1="0" x2="1" y2="1">
+                        <stop offset="0%" stopColor="#F0EDE8" />
+                        <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
+                        <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
+                      </linearGradient>
+                    </defs>
+                    <rect width="100%" height="100%" fill="url(#blur-our-story-2)" />
+                  </svg>
                 </div>
               </div>
               {/* Stats grid */}
@@ -449,15 +454,16 @@ export default function Landing() {
               className="relative"
             >
               <div className="aspect-[4/5] rounded-3xl overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?w=800&q=80"
-                  alt="Lab-grown diamond being examined"
-                  loading="lazy"
-                  decoding="async"
-                  width={800}
-                  height={1000}
-                  className="h-full w-full object-cover"
-                />
+                <svg viewBox="0 0 800 1000" className="h-full w-full" preserveAspectRatio="xMidYMid slice">
+                  <defs>
+                    <linearGradient id="blur-lab-grown" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#F0EDE8" />
+                      <stop offset="50%" stopColor="#F0EDE8" stopOpacity="0.8" />
+                      <stop offset="100%" stopColor="#D4AF37" stopOpacity="0.08" />
+                    </linearGradient>
+                  </defs>
+                  <rect width="100%" height="100%" fill="url(#blur-lab-grown)" />
+                </svg>
               </div>
               <div className="absolute -bottom-6 -right-6 bg-white rounded-2xl p-5 shadow-xl">
                 <div className="flex items-center gap-3">

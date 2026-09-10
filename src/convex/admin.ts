@@ -68,7 +68,15 @@ export const createProduct = mutation({
     stock: v.number(),
     metalType: v.string(),
     size: v.string(),
+    sizeType: v.optional(
+      v.union(v.literal("Ring Size"), v.literal("Inches"), v.literal("One Size"), v.literal("Custom")),
+    ),
     carat: v.number(),
+    diamondType: v.optional(
+      v.union(v.literal("Moissanite"), v.literal("CVD"), v.literal("Natural Diamond")),
+    ),
+    weightGrams: v.optional(v.number()),
+    settingType: v.optional(v.string()),
     cut: v.union(
       v.literal("Ideal"),
       v.literal("Excellent"),
@@ -96,13 +104,17 @@ export const createProduct = mutation({
     imageUrl: v.string(),
     images: v.array(v.string()),
     imageStorageId: v.optional(v.id("_storage")),
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
     metalOptions: v.array(
       v.object({
         metalType: v.string(),
-        priceAdjustment: v.number(),
+        price: v.optional(v.number()),
+        priceAdjustment: v.optional(v.number()),
       }),
     ),
     certificateUrl: v.optional(v.string()),
+    certificateType: v.optional(v.union(v.literal("GIA"), v.literal("IGI"))),
+    certificateNumber: v.optional(v.string()),
     category: v.string(),
     featured: v.boolean(),
   },
@@ -133,7 +145,15 @@ export const updateProduct = mutation({
     stock: v.number(),
     metalType: v.string(),
     size: v.string(),
+    sizeType: v.optional(
+      v.union(v.literal("Ring Size"), v.literal("Inches"), v.literal("One Size"), v.literal("Custom")),
+    ),
     carat: v.number(),
+    diamondType: v.optional(
+      v.union(v.literal("Moissanite"), v.literal("CVD"), v.literal("Natural Diamond")),
+    ),
+    weightGrams: v.optional(v.number()),
+    settingType: v.optional(v.string()),
     cut: v.union(
       v.literal("Ideal"),
       v.literal("Excellent"),
@@ -161,13 +181,17 @@ export const updateProduct = mutation({
     imageUrl: v.string(),
     images: v.array(v.string()),
     imageStorageId: v.optional(v.id("_storage")),
+    imageStorageIds: v.optional(v.array(v.id("_storage"))),
     metalOptions: v.array(
       v.object({
         metalType: v.string(),
-        priceAdjustment: v.number(),
+        price: v.optional(v.number()),
+        priceAdjustment: v.optional(v.number()),
       }),
     ),
     certificateUrl: v.optional(v.string()),
+    certificateType: v.optional(v.union(v.literal("GIA"), v.literal("IGI"))),
+    certificateNumber: v.optional(v.string()),
     category: v.string(),
     featured: v.boolean(),
   },

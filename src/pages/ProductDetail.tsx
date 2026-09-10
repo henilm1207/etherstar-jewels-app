@@ -16,7 +16,7 @@ import {
   ZoomIn,
   Heart,
 } from "lucide-react";
-import { sortMetalOptions } from "@/lib/metals";
+import { getMetalPrice, sortMetalOptions } from "@/lib/metals";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -99,9 +99,7 @@ export default function ProductDetail() {
       ? sortedMetalOptions?.[selectedMetalIdx] || sortedMetalOptions?.[0]
       : undefined;
   const displayPrice =
-    product && activeMetal
-      ? product.basePrice + activeMetal.priceAdjustment
-      : product?.basePrice ?? 0;
+    getMetalPrice(activeMetal, product?.basePrice ?? 0);
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent<HTMLDivElement>) => {
@@ -195,13 +193,25 @@ export default function ProductDetail() {
       minimumFractionDigits: 0,
     }).format(price);
 
-  const sizes = SIZES_BY_CATEGORY[product.category] || DEFAULT_SIZES;
+  const sizeLabel = product.sizeType ?? (product.category === "Rings" ? "Ring Size" : "Size");
+  const sizes = product.size
+    ? [product.size]
+    : SIZES_BY_CATEGORY[product.category] || DEFAULT_SIZES;
 
   const fourCs = [
+    ...(product.diamondType
+      ? [{ label: "Diamond", value: product.diamondType, icon: "◇" }]
+      : []),
     { label: "Carat", value: product.carat.toString(), icon: "⚖️" },
+    ...(product.weightGrams !== undefined
+      ? [{ label: "Weight", value: `${product.weightGrams} g`, icon: "◈" }]
+      : []),
     { label: "Cut", value: product.cut, icon: "✨" },
     { label: "Color", value: product.color, icon: "💎" },
     { label: "Clarity", value: product.clarity, icon: "🔍" },
+    ...(product.settingType
+      ? [{ label: "Setting", value: product.settingType, icon: "◌" }]
+      : []),
   ];
 
   const related = relatedProducts
@@ -403,7 +413,7 @@ export default function ProductDetail() {
             </div>
 
             {/* 4Cs */}
-            <div className="mt-8 grid grid-cols-4 gap-3">
+            <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-3">
               {fourCs.map((c) => (
                 <div
                   key={c.label}
@@ -446,7 +456,7 @@ export default function ProductDetail() {
               <div>
                 <div className="flex items-center justify-between mb-3">
                   <label className="text-xs font-semibold uppercase tracking-wider text-[#1A202C]/40">
-                    {product.category === "Rings" ? "Ring Size" : "Size"}
+                    {sizeLabel}
                   </label>
                   {product.category === "Rings" && (
                     <button
@@ -493,20 +503,29 @@ export default function ProductDetail() {
               )}
             </div>
 
-            {/* Certificate download temporarily disabled */}
-            {/* {product.certificateUrl && (
-              <div className="mt-6">
+            {(product.certificateType || product.certificateNumber || product.certificateUrl) && (
+              <div className="mt-6 rounded-xl border border-[#E5E2DD] bg-white p-4">
+                <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[#1A202C]/40">
+                  <Award className="h-4 w-4 text-[#D4AF37]" />
+                  {product.certificateType || "Certificate"}
+                </div>
+                {product.certificateNumber && (
+                  <p className="mt-2 text-sm text-[#1A202C]/60">
+                    Certificate number: <span className="font-medium text-[#1A202C]">{product.certificateNumber}</span>
+                  </p>
+                )}
+                {product.certificateUrl && (
                 <a
                   href={product.certificateUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-2 rounded-lg border border-[#E5E2DD] bg-white px-5 py-3 text-sm font-medium text-[#1A202C]/60 hover:bg-[#F0EDE8] hover:text-[#1A202C] transition-all"
                 >
-                  <Download className="h-4 w-4" />
-                  Download IGI/GIA Certificate
+                  View {product.certificateType || "certificate"} certificate
                 </a>
+                )}
               </div>
-            )} */}
+            )}
 
             {/* Trust Badges */}
             <div className="mt-8 pt-8 border-t border-[#E5E2DD] grid grid-cols-3 gap-4">

@@ -10,7 +10,7 @@ export const METAL_ORDER = [
  * Sort an array of metal options into the canonical display order.
  * Unknown metal types are placed at the end.
  */
-export function sortMetalOptions<T extends { metalType: string; priceAdjustment: number }>(
+export function sortMetalOptions<T extends { metalType: string; price?: number; priceAdjustment?: number }>(
   options: T[],
 ): T[] {
   return [...options].sort((a, b) => {
@@ -20,4 +20,11 @@ export function sortMetalOptions<T extends { metalType: string; priceAdjustment:
     const bRank = bIdx >= 0 ? bIdx : METAL_ORDER.length;
     return aRank - bRank;
   });
+}
+
+export function getMetalPrice(
+  option: { price?: number; priceAdjustment?: number } | undefined,
+  basePrice: number,
+) {
+  return option?.price ?? basePrice + (option?.priceAdjustment ?? 0);
 }

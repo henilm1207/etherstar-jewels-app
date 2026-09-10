@@ -1,6 +1,6 @@
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { useQuery, useMutation } from "convex/react";
+import { useQuery, useMutation, useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Mail,
   Upload,
+  Sparkles,
 } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
 
@@ -28,10 +29,10 @@ const COLORS = ["D", "E", "F", "G", "H", "I"] as const;
 const CLARITIES = ["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2"] as const;
 const CATEGORIES = ["Rings", "Earrings", "Pendants", "Bracelets"];
 const METAL_OPTIONS_DEFAULT = [
-  { metalType: "14k Gold", priceAdjustment: 0 },
-  { metalType: "18k Gold", priceAdjustment: 800 },
-  { metalType: "10k Gold", priceAdjustment: -400 },
-  { metalType: "Gold-Plated Silver", priceAdjustment: -2000 },
+  { metalType: "14k Gold", price: 0 },
+  { metalType: "18k Gold", price: 0 },
+  { metalType: "10k Gold", price: 0 },
+  { metalType: "Gold-Plated Silver", price: 0 },
 ];
 
 interface ProductForm {
@@ -41,15 +42,22 @@ interface ProductForm {
   stock: number;
   metalType: string;
   size: string;
+  sizeType: "Ring Size" | "Inches" | "One Size" | "Custom";
   carat: number;
+  diamondType: "Moissanite" | "CVD" | "Natural Diamond" | "";
+  weightGrams?: number;
+  settingType: string;
   cut: string;
   color: string;
   clarity: string;
   imageUrl: string;
   images: string[];
   imageStorageId?: StorageId;
-  metalOptions: { metalType: string; priceAdjustment: number }[];
+  imageStorageIds?: StorageId[];
+  metalOptions: { metalType: string; price: number; priceAdjustment?: number }[];
   certificateUrl: string;
+  certificateType: "GIA" | "IGI" | "";
+  certificateNumber: string;
   category: string;
   featured: boolean;
 }
@@ -61,7 +69,11 @@ const emptyForm: ProductForm = {
   stock: 0,
   metalType: "14k Gold",
   size: "7",
+  sizeType: "Ring Size",
   carat: 1.0,
+  diamondType: "CVD",
+  weightGrams: undefined,
+  settingType: "",
   cut: "Ideal",
   color: "F",
   clarity: "VS1",
@@ -69,6 +81,8 @@ const emptyForm: ProductForm = {
   images: [""],
   metalOptions: [...METAL_OPTIONS_DEFAULT],
   certificateUrl: "",
+  certificateType: "",
+  certificateNumber: "",
   category: "Rings",
   featured: false,
 };
@@ -78,16 +92,22 @@ function ProductFormModal({
   onSave,
   onClose,
   generateUploadUrl,
+  analyzeProductImage,
 }: {
   initial: ProductForm;
   onSave: (form: ProductForm) => void;
   onClose: () => void;
   generateUploadUrl: () => Promise<string>;
+  analyzeProductImage: (args: { imageDataUrl: string; category: string }) => Promise<{ name: string; description: string }>;
 }) {
   const [form, setForm] = useState<ProductForm>({ ...initial });
   const [saving, setSaving] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [analyzing, setAnalyzing] = useState(false);
+  const [aiError, setAiError] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [uploadedPreviews, setUploadedPreviews] = useState<string[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const update = <K extends keyof ProductForm>(key: K, val: ProductForm[K]) =>
@@ -105,7 +125,7 @@ function ProductFormModal({
   const addMetal = () =>
     setForm((f) => ({
       ...f,
-      metalOptions: [...f.metalOptions, { metalType: "", priceAdjustment: 0 }],
+      metalOptions: [...f.metalOptions, { metalType: "", price: 0 }],
     }));
   const removeMetal = (idx: number) =>
     setForm((f) => ({
@@ -114,7 +134,7 @@ function ProductFormModal({
     }));
   const updateMetal = (
     idx: number,
-    key: "metalType" | "priceAdjustment",
+    key: "metalType" | "price",
     val: string | number,
   ) =>
     setForm((f) => ({
@@ -124,34 +144,38 @@ function ProductFormModal({
       ),
     }));
 
-  /** Upload a selected file to Convex storage and attach its storageId. */
-  const handleFileSelected = async (file: File | undefined) => {
-    if (!file) return;
-    if (!file.type.startsWith("image/")) {
+  /** Upload selected files to Convex storage and attach their storage IDs. */
+  const handleFileSelected = async (fileList: FileList | undefined) => {
+    const files = fileList ? Array.from(fileList) : [];
+    if (files.length === 0) return;
+    setSelectedImage(files[0]);
+    if (files.some((file) => !file.type.startsWith("image/"))) {
       setUploadError("Please choose an image file (PNG, JPG, WEBP).");
       return;
     }
     setUploadError(null);
     setUploading(true);
     try {
-      // 1. Ask the backend for a short-lived upload URL
-      const uploadUrl = await generateUploadUrl();
-      // 2. POST the file directly to Convex storage
-      const res = await fetch(uploadUrl, {
-        method: "POST",
-        headers: { "Content-Type": file.type },
-        body: file,
-      });
-      if (!res.ok) {
-        throw new Error(`Upload failed (${res.status} ${res.statusText})`);
+      const uploaded: { storageId: StorageId; preview: string }[] = [];
+      for (const file of files) {
+        const uploadUrl = await generateUploadUrl();
+        const res = await fetch(uploadUrl, {
+          method: "POST",
+          headers: { "Content-Type": file.type },
+          body: file,
+        });
+        if (!res.ok) throw new Error(`Upload failed (${res.status} ${res.statusText})`);
+        const { storageId } = (await res.json()) as { storageId: string };
+        uploaded.push({ storageId: storageId as StorageId, preview: URL.createObjectURL(file) });
       }
-      // 3. Extract the storageId from the response
-      const { storageId } = (await res.json()) as { storageId: string };
+      const storageIds = uploaded.map((item) => item.storageId);
+      const previews = uploaded.map((item) => item.preview);
+      setUploadedPreviews((current) => [...current, ...previews]);
       setForm((f) => ({
         ...f,
-        imageStorageId: storageId as StorageId,
-        // Show the freshly-uploaded image immediately via a local preview
-        imageUrl: URL.createObjectURL(file),
+        imageStorageId: f.imageStorageId ?? storageIds[0],
+        imageStorageIds: [...(f.imageStorageIds ?? []), ...storageIds],
+        imageUrl: f.imageUrl || previews[0],
       }));
     } catch (err) {
       setUploadError(
@@ -163,12 +187,37 @@ function ProductFormModal({
     }
   };
 
+  const handleAnalyzeImage = async (file: File | null) => {
+    if (!file) {
+      setAiError("Choose a product image first.");
+      return;
+    }
+    setAiError(null);
+    setAnalyzing(true);
+    try {
+      const imageDataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("Could not read the image."));
+        reader.readAsDataURL(file);
+      });
+      const copy = await analyzeProductImage({ imageDataUrl, category: form.category });
+      setForm((current) => ({ ...current, ...copy }));
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : "AI analysis failed. Please try again.");
+    } finally {
+      setAnalyzing(false);
+    }
+  };
+
   const handleSubmit = async () => {
     setSaving(true);
     const cleaned = {
       ...form,
       images: form.images.filter((img) => img.trim() !== ""),
-      metalOptions: form.metalOptions.filter((m) => m.metalType.trim() !== ""),
+      metalOptions: form.metalOptions
+        .filter((m) => m.metalType.trim() !== "")
+        .map(({ metalType, price }) => ({ metalType, price })),
       imageUrl: form.imageUrl || form.images[0] || "",
     };
     await onSave(cleaned);
@@ -255,6 +304,19 @@ function ProductFormModal({
                 className={inputClass}
               />
             </div>
+            <div>
+              <label className={labelClass}>Diamond Type</label>
+              <select
+                value={form.diamondType}
+                onChange={(e) => update("diamondType", e.target.value as ProductForm["diamondType"])}
+                className={inputClass}
+              >
+                <option value="">Not specified</option>
+                <option value="Moissanite">Moissanite</option>
+                <option value="CVD">CVD Lab-Grown Diamond</option>
+                <option value="Natural Diamond">Natural Diamond</option>
+              </select>
+            </div>
           </div>
 
           {/* Diamond 4Cs */}
@@ -313,14 +375,50 @@ function ProductFormModal({
           </div>
 
           {/* Size */}
-          <div>
-            <label className={labelClass}>Size</label>
-            <input
-              value={form.size}
-              onChange={(e) => update("size", e.target.value)}
-              placeholder="e.g. 7, One Size, 7 inches"
-              className={inputClass}
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Size</label>
+              <input
+                value={form.size}
+                onChange={(e) => update("size", e.target.value)}
+                placeholder={form.sizeType === "Inches" ? "e.g. 7 inches" : "e.g. 7"}
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Size Parameter</label>
+              <select
+                value={form.sizeType}
+                onChange={(e) => update("sizeType", e.target.value as ProductForm["sizeType"])}
+                className={inputClass}
+              >
+                <option value="Ring Size">Ring Size Number</option>
+                <option value="Inches">Inches</option>
+                <option value="One Size">One Size</option>
+                <option value="Custom">Custom</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Weight (grams)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={form.weightGrams ?? ""}
+                onChange={(e) => update("weightGrams", e.target.value === "" ? undefined : Number(e.target.value))}
+                placeholder="e.g. 3.25"
+                className={inputClass}
+              />
+            </div>
+            <div>
+              <label className={labelClass}>Setting Type</label>
+              <input
+                value={form.settingType}
+                onChange={(e) => update("settingType", e.target.value)}
+                placeholder="e.g. Prong, Bezel, Halo"
+                className={inputClass}
+              />
+            </div>
           </div>
 
           {/* Images */}
@@ -341,18 +439,19 @@ function ProductFormModal({
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-wider text-[#1A202C]/50">
-                    Upload Primary Image
+                    Upload Product Photos
                   </p>
                   <p className="text-[11px] text-[#1A202C]/35 mt-0.5">
-                    Stored in Convex file storage · PNG, JPG, WEBP
+                    Stored in Convex file storage · Select multiple PNG, JPG, or WEBP files
                   </p>
                 </div>
                 <input
                   ref={fileInputRef}
                   type="file"
+                  multiple
                   accept="image/png,image/jpeg,image/webp"
                   className="hidden"
-                  onChange={(e) => handleFileSelected(e.target.files?.[0])}
+                  onChange={(e) => handleFileSelected(e.target.files ?? undefined)}
                 />
                 <button
                   type="button"
@@ -365,19 +464,29 @@ function ProductFormModal({
                   ) : (
                     <Upload className="h-3.5 w-3.5" />
                   )}
-                  {uploading ? "Uploading…" : "Choose File"}
+                  {uploading ? "Uploading…" : "Choose Photos"}
                 </button>
               </div>
+              <button
+                type="button"
+                onClick={() => handleAnalyzeImage(selectedImage)}
+                disabled={uploading || analyzing}
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#1A202C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1A202C]/85 transition-all disabled:opacity-50"
+              >
+                {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {analyzing ? "Analyzing image…" : "Analyze with AI"}
+              </button>
               {uploadError && (
                 <p className="mt-2 text-xs text-red-500">{uploadError}</p>
               )}
-              {form.imageStorageId && form.imageUrl && (
+              {aiError && <p className="mt-2 text-xs text-red-500">{aiError}</p>}
+              {(uploadedPreviews.length > 0 || (form.imageStorageId && form.imageUrl)) && (
                 <div className="mt-3 flex items-center gap-3">
-                  <img
-                    src={form.imageUrl}
-                    alt="Primary image preview"
-                    className="h-14 w-14 rounded-lg border border-[#E5E2DD] object-cover"
-                  />
+                  <div className="flex gap-2">
+                    {(uploadedPreviews.length > 0 ? uploadedPreviews : [form.imageUrl]).map((src, index) => (
+                      <img key={`${src}-${index}`} src={src} alt={`Product preview ${index + 1}`} className="h-14 w-14 rounded-lg border border-[#E5E2DD] object-cover" />
+                    ))}
+                  </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-xs font-medium text-emerald-600">
                       Image uploaded to storage
@@ -389,7 +498,7 @@ function ProductFormModal({
                   <button
                     type="button"
                     onClick={() =>
-                      setForm((f) => ({ ...f, imageStorageId: undefined, imageUrl: "" }))
+                      setForm((f) => ({ ...f, imageStorageId: undefined, imageStorageIds: undefined, imageUrl: "" }))
                     }
                     className="shrink-0 p-1.5 text-[#1A202C]/25 hover:text-red-400 transition-colors"
                     aria-label="Remove uploaded image"
@@ -425,7 +534,7 @@ function ProductFormModal({
           {/* Metal Options */}
           <div>
             <div className="flex items-center justify-between mb-2">
-              <label className={labelClass}>Metal Variants & Pricing</label>
+              <label className={labelClass}>Metal Variants & Manual Prices</label>
               <button
                 type="button"
                 onClick={addMetal}
@@ -444,14 +553,13 @@ function ProductFormModal({
                     className={`${inputClass} flex-1`}
                   />
                   <div className="relative w-36">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#1A202C]/30">
-                      +$
-                    </span>
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-[#1A202C]/30">$</span>
                     <input
                       type="number"
-                      value={mv.priceAdjustment}
+                      min="0"
+                      value={mv.price}
                       onChange={(e) =>
-                        updateMetal(i, "priceAdjustment", Number(e.target.value))
+                        updateMetal(i, "price", Number(e.target.value))
                       }
                       className={`${inputClass} pl-7`}
                     />
@@ -469,7 +577,28 @@ function ProductFormModal({
           </div>
 
           {/* Certificate & Featured */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className={labelClass}>Certificate Lab</label>
+              <select
+                value={form.certificateType}
+                onChange={(e) => update("certificateType", e.target.value as "GIA" | "IGI" | "")}
+                className={inputClass}
+              >
+                <option value="">No certificate</option>
+                <option value="GIA">GIA</option>
+                <option value="IGI">IGI</option>
+              </select>
+            </div>
+            <div>
+              <label className={labelClass}>Certificate Number</label>
+              <input
+                value={form.certificateNumber}
+                onChange={(e) => update("certificateNumber", e.target.value)}
+                placeholder="e.g. 123456789"
+                className={inputClass}
+              />
+            </div>
             <div>
               <label className={labelClass}>Certificate URL</label>
               <input
@@ -479,7 +608,7 @@ function ProductFormModal({
                 className={inputClass}
               />
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end sm:col-span-3">
               <label className="flex items-center gap-3 cursor-pointer">
                 <div
                   className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all ${
@@ -534,6 +663,7 @@ export default function Admin() {
   const updateProduct = useMutation(api.admin.updateProduct);
   const deleteProduct = useMutation(api.admin.deleteProduct);
   const generateUploadUrl = useMutation(api.admin.generateUploadUrl);
+  const analyzeProductImage = useAction(api.productAi.analyzeProductImage);
   const [selectedInquiry, setSelectedInquiry] = useState<Record<string, unknown> | null>(null);
   const [inquiryImageModal, setInquiryImageModal] = useState<string | null>(null);
 
@@ -552,23 +682,39 @@ export default function Admin() {
     stock: (p.stock as number) ?? 0,
     metalType: (p.metalType as string) ?? "14k Gold",
     size: (p.size as string) ?? "7",
+    sizeType: (p.sizeType as ProductForm["sizeType"]) ?? "Custom",
     carat: (p.carat as number) ?? 1,
+    diamondType: (p.diamondType as ProductForm["diamondType"]) ?? "",
+    weightGrams: (p.weightGrams as number) ?? undefined,
+    settingType: (p.settingType as string) ?? "",
     cut: (p.cut as string) ?? "Ideal",
     color: (p.color as string) ?? "F",
     clarity: (p.clarity as string) ?? "VS1",
     imageUrl: (p.imageUrl as string) ?? "",
     images: (p.images as string[]) ?? [""],
-    metalOptions:
-      (p.metalOptions as { metalType: string; priceAdjustment: number }[]) ??
-      [...METAL_OPTIONS_DEFAULT],
+    imageStorageIds: (p.imageStorageIds as StorageId[]) ?? undefined,
+    metalOptions: ((p.metalOptions as { metalType: string; price?: number; priceAdjustment?: number }[]) ??
+      [...METAL_OPTIONS_DEFAULT]).map((option) => ({
+        metalType: option.metalType,
+        price: option.price ?? ((p.basePrice as number) ?? 0) + (option.priceAdjustment ?? 0),
+        priceAdjustment: option.priceAdjustment,
+      })),
     certificateUrl: (p.certificateUrl as string) ?? "",
+    certificateType: (p.certificateType as "GIA" | "IGI") ?? "",
+    certificateNumber: (p.certificateNumber as string) ?? "",
     category: (p.category as string) ?? "Rings",
     featured: (p.featured as boolean) ?? false,
   });
 
   const handleSave = async (form: ProductForm) => {
+    const { certificateType, certificateNumber, weightGrams, settingType, diamondType, ...rest } = form;
     const payload = {
-      ...form,
+      ...rest,
+      weightGrams,
+      settingType: settingType || undefined,
+      diamondType: diamondType || undefined,
+      certificateType: certificateType || undefined,
+      certificateNumber: certificateNumber || undefined,
       cut: form.cut as "Ideal" | "Excellent" | "Very Good" | "Good",
       color: form.color as "D" | "E" | "F" | "G" | "H" | "I",
       clarity: form.clarity as
@@ -723,7 +869,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product: { _id: string; name: string; imageUrl: string; stock: number; category: string; featured: boolean; basePrice: number; metalOptions: Array<{ metalType: string; priceAdjustment: number }>; metalType: string; carat: number; cut: string; color: string; clarity: string }) => (
+                  {products.map((product: { _id: string; name: string; imageUrl: string; stock: number; category: string; featured: boolean; basePrice: number; metalOptions: Array<{ metalType: string; price?: number; priceAdjustment?: number }>; metalType: string; carat: number; cut: string; color: string; clarity: string }) => (
                     <tr
                       key={product._id}
                       className="border-b border-[#E5E2DD]/30 last:border-0 hover:bg-[#F9F8F6]/50 transition-colors"
@@ -1002,6 +1148,7 @@ export default function Admin() {
             onSave={handleSave}
             onClose={() => setModal(null)}
             generateUploadUrl={generateUploadUrl}
+            analyzeProductImage={analyzeProductImage}
           />
         )}
       </AnimatePresence>

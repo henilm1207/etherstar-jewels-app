@@ -23,7 +23,8 @@ const RESEND_API_URL = "https://api.resend.com/emails";
  * Once you verify a custom domain in Resend, change this to
  * e.g. "Etherstar Jewels <hello@etherstarjewels.com>".
  */
-const RESEND_FROM_EMAIL = "onboarding@resend.dev";
+const RESEND_FROM_EMAIL =
+  process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 
 function buildVerificationEmailHtml(code: string): string {
   return `
@@ -123,7 +124,7 @@ export const emailOtp = Email({
           `Resend Error: HTTP ${response.status} ${response.statusText} — response body: ${body}`,
         );
         console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
-        return;
+        throw new Error(`Resend rejected the verification email (${response.status}).`);
       }
 
       const data = await response.json().catch(() => null);
@@ -140,7 +141,7 @@ export const emailOtp = Email({
         `[Etherstar Auth] Resend request failed: ${message}`,
       );
       console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
-      return;
+      throw error;
     }
   },
 });

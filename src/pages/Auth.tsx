@@ -173,7 +173,9 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
     } catch (error) {
       console.error("Email sign-in error:", error);
       const msg = error instanceof Error ? error.message : "";
-      if (msg.includes("RESEND_API_KEY") || msg.includes("invalid Resend")) {
+      if (msg.includes("403") || msg.includes("testing emails") || msg.includes("verify a domain")) {
+        handleSendError("Email delivery is not enabled for this address yet. Verify your sending domain in Resend and try again.");
+      } else if (msg.includes("RESEND_API_KEY") || msg.includes("invalid Resend")) {
         handleSendError(msg);
       } else if (msg.includes("couldn't send") || msg.includes("couldn't reach")) {
         handleSendError(msg);
@@ -424,44 +426,6 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                       />
                     </div>
 
-                    {/* Admin access toggle */}
-                    <label className="flex items-center gap-3 cursor-pointer select-none group">
-                      <div
-                        className={`h-5 w-5 rounded-md border flex items-center justify-center transition-all shrink-0 ${
-                          requestAdminAccess
-                            ? "bg-[#D4AF37] border-[#D4AF37]"
-                            : "border-[#1A202C]/20 group-hover:border-[#D4AF37]/50"
-                        }`}
-                        onClick={() => setRequestAdminAccess((v) => !v)}
-                      >
-                        {requestAdminAccess && (
-                          <svg
-                            className="h-3 w-3 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            strokeWidth={3}
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              d="M5 13l4 4L19 7"
-                            />
-                          </svg>
-                        )}
-                      </div>
-                      <input
-                        type="checkbox"
-                        className="sr-only"
-                        checked={requestAdminAccess}
-                        onChange={(e) => setRequestAdminAccess(e.target.checked)}
-                      />
-                      <span className="flex items-center gap-1.5 text-sm text-[#1A202C]/50 group-hover:text-[#1A202C]/70 transition-colors">
-                        <ShieldCheck className="h-4 w-4 text-[#D4AF37]/60" />
-                        Request Admin Access
-                      </span>
-                    </label>
-
                     {error && (
                       <p className="text-sm text-red-500 text-center">
                         {error}
@@ -477,7 +441,7 @@ function Auth({ redirectAfterAuth }: AuthProps = {}) {
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          {requestAdminAccess ? "Continue with Admin Access" : "Continue with Email"}
+                          Continue with Email
                           <ArrowRight className="h-4 w-4" />
                         </>
                       )}

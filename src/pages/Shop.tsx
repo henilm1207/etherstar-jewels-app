@@ -13,7 +13,7 @@ import {
   Diamond,
 } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
-import { sortMetalOptions } from "@/lib/metals";
+import { getMetalPrice, sortMetalOptions } from "@/lib/metals";
 
 /* ── filter option lists ─────────────────────────────────────────────── */
 const METAL_TYPES = ["18k Gold", "14k Gold", "10k Gold", "Gold-Plated Silver"];
@@ -30,7 +30,8 @@ const CARAT_RANGES = [
 /* ── product interface ───────────────────────────────────────────────── */
 interface MetalOption {
   metalType: string;
-  priceAdjustment: number;
+  price?: number;
+  priceAdjustment?: number;
 }
 
 interface Product {
@@ -66,9 +67,7 @@ function ShopProductCard({
   const metalOptions = sortMetalOptions(product?.metalOptions ?? []);
   const [selectedMetalIdx, setSelectedMetalIdx] = useState(0);
   const activeOption = metalOptions[selectedMetalIdx] || metalOptions[0];
-  const displayPrice = activeOption
-    ? product.basePrice + activeOption.priceAdjustment
-    : product.basePrice;
+  const displayPrice = getMetalPrice(activeOption, product.basePrice);
   const displayImage = images[hoveredImage] || product.imageUrl || "";
 
   return (

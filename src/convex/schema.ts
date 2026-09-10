@@ -18,7 +18,9 @@ export type Role = Infer<typeof roleValidator>;
 
 const metalOptionValidator = v.object({
   metalType: v.string(),
-  priceAdjustment: v.number(), // added to base price when selected
+  // New products use an absolute variant price. Keep priceAdjustment for old records.
+  price: v.optional(v.number()),
+  priceAdjustment: v.optional(v.number()),
 });
 
 const schema = defineSchema(
@@ -46,7 +48,15 @@ const schema = defineSchema(
       // default metal type (first in metalOptions)
       metalType: v.string(),
       size: v.string(),
+      sizeType: v.optional(
+        v.union(v.literal("Ring Size"), v.literal("Inches"), v.literal("One Size"), v.literal("Custom")),
+      ),
       carat: v.number(),
+      diamondType: v.optional(
+        v.union(v.literal("Moissanite"), v.literal("CVD"), v.literal("Natural Diamond")),
+      ),
+      weightGrams: v.optional(v.number()),
+      settingType: v.optional(v.string()),
       cut: v.union(
         v.literal("Ideal"),
         v.literal("Excellent"),
@@ -78,9 +88,12 @@ const schema = defineSchema(
       // Convex storage ID of a directly-uploaded primary image (optional).
       // When present, it takes display priority over imageUrl/images[0].
       imageStorageId: v.optional(v.id("_storage")),
+      imageStorageIds: v.optional(v.array(v.id("_storage"))),
       // metal variants with per-metal price adjustments
       metalOptions: v.array(metalOptionValidator),
       certificateUrl: v.optional(v.string()),
+      certificateType: v.optional(v.union(v.literal("GIA"), v.literal("IGI"))),
+      certificateNumber: v.optional(v.string()),
       category: v.string(),
       featured: v.boolean(),
     })
@@ -108,6 +121,12 @@ const schema = defineSchema(
     })
       .index("by_status", ["status"])
       .index("by_email", ["email"]),
+
+    phoneVerifications: defineTable({
+      phone: v.string(),
+      verifiedAt: v.number(),
+      expiresAt: v.number(),
+    }),
 
     // User wishlists — one row per user-product pair
     wishlists: defineTable({

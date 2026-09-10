@@ -11,13 +11,23 @@ export const submit = mutation({
     firstName: v.string(),
     lastName: v.string(),
     email: v.string(),
-    phone: v.optional(v.string()),
+    phone: v.string(),
+    phoneVerificationId: v.id("phoneVerifications"),
     jewelryType: v.string(),
     metal: v.optional(v.string()),
     description: v.optional(v.string()),
     images: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
+    const verification = await ctx.db.get(args.phoneVerificationId);
+    if (
+      !verification ||
+      verification.phone !== args.phone ||
+      verification.expiresAt < Date.now()
+    ) {
+      throw new Error("Please verify your phone number before submitting the inquiry.");
+    }
+
     const inquiryId = await ctx.db.insert("inquiries", {
       firstName: args.firstName,
       lastName: args.lastName,

@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router";
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
 import { Heart } from "lucide-react";
-import { sortMetalOptions } from "@/lib/metals";
+import { getMetalPrice, sortMetalOptions } from "@/lib/metals";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../convex/_generated/api";
 import { useAuth } from "@/hooks/use-auth";
@@ -10,7 +10,8 @@ import type { Id } from "../convex/_generated/dataModel";
 
 interface MetalOption {
   metalType: string;
-  priceAdjustment: number;
+  price?: number;
+  priceAdjustment?: number;
 }
 
 interface Product {
@@ -111,9 +112,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
     return idx >= 0 ? idx : 0;
   });
   const activeOption = metalOptions[selectedMetalIdx] || metalOptions[0];
-  const displayPrice = activeOption
-    ? basePrice + activeOption.priceAdjustment
-    : basePrice;
+  const displayPrice = getMetalPrice(activeOption, basePrice);
   const displayImage = images[hoveredImage] || images[0] || product?.imageUrl || "";
 
   return (

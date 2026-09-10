@@ -3,7 +3,7 @@ import { Footer } from "@/components/Footer";
 import { useState, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Diamond, ArrowRight, Check, Loader2, Upload, X } from "lucide-react";
-import { useMutation } from "convex/react";
+import { useMutation, useAction } from "convex/react";
 import { api } from "../convex/_generated/api";
 
 export default function CustomDesign() {
@@ -12,6 +12,14 @@ export default function CustomDesign() {
   const [images, setImages] = useState<{ file: File; preview: string }[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const submitInquiry = useMutation(api.inquiries.submit);
+  const sendPhoneOtp = useAction(api.phoneVerification.sendPhoneOtp);
+  const verifyPhoneOtp = useAction(api.phoneVerification.verifyPhoneOtp);
+  const [phone, setPhone] = useState("");
+  const [phoneCode, setPhoneCode] = useState("");
+  const [phoneVerificationId, setPhoneVerificationId] = useState<string | null>(null);
+  const [phoneOtpSent, setPhoneOtpSent] = useState(false);
+  const [phoneBusy, setPhoneBusy] = useState(false);
+  const [phoneError, setPhoneError] = useState<string | null>(null);
 
   const handleImageAdd = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -34,8 +42,38 @@ export default function CustomDesign() {
     });
   }, []);
 
+  const handleSendPhoneOtp = async () => {
+    setPhoneBusy(true);
+    setPhoneError(null);
+    try {
+      await sendPhoneOtp({ phone });
+      setPhoneOtpSent(true);
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : "Unable to send the SMS code.");
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
+  const handleVerifyPhone = async () => {
+    setPhoneBusy(true);
+    setPhoneError(null);
+    try {
+      const verificationId = await verifyPhoneOtp({ phone, code: phoneCode });
+      setPhoneVerificationId(verificationId as string);
+    } catch (error) {
+      setPhoneError(error instanceof Error ? error.message : "The phone verification code is incorrect.");
+    } finally {
+      setPhoneBusy(false);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (!phoneVerificationId) {
+      setPhoneError("Verify your phone number before submitting the inquiry.");
+      return;
+    }
     setIsLoading(true);
     try {
       const form = e.currentTarget;
@@ -56,7 +94,8 @@ export default function CustomDesign() {
         firstName: fd.get("firstName") as string,
         lastName: fd.get("lastName") as string,
         email: fd.get("email") as string,
-        phone: (fd.get("phone") as string) || undefined,
+        phone,
+        phoneVerificationId: phoneVerificationId as any,
         jewelryType: fd.get("jewelryType") as string,
         metal: (fd.get("metal") as string) || undefined,
         description: (fd.get("description") as string) || undefined,
@@ -190,13 +229,37 @@ export default function CustomDesign() {
                 </div>
 
                 <div>
-                  <label className={labelClass}>Phone (Optional)</label>
+                    <label className={labelClass}>Phone Number</label>
                   <input
                     name="phone"
                     type="tel"
+                      required
+                      value={phone}
+                      onChange={(e) => {
+                        setPhone(e.target.value);
+                        setPhoneVerificationId(null);
+                        setPhoneOtpSent(false);
+                      }}
                     className={inputClass}
-                    placeholder="+91 XXXXX XXXXX"
+                      placeholder="+91 98765 43210"
                   />
+                    {!phoneVerificationId && (
+                      <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+                        <button type="button" onClick={handleSendPhoneOtp} disabled={phoneBusy || !phone} className="rounded-lg border border-[#D4AF37]/50 px-4 py-2 text-xs font-semibold text-[#D4AF37] disabled:opacity-50">
+                          {phoneBusy ? "Sending…" : phoneOtpSent ? "Resend OTP" : "Send OTP"}
+                        </button>
+                        {phoneOtpSent && (
+                          <>
+                            <input value={phoneCode} onChange={(e) => setPhoneCode(e.target.value)} inputMode="numeric" maxLength={6} placeholder="6-digit code" className={`${inputClass} sm:max-w-[180px]`} />
+                            <button type="button" onClick={handleVerifyPhone} disabled={phoneBusy || phoneCode.length !== 6} className="rounded-lg bg-[#1A202C] px-4 py-2 text-xs font-semibold text-white disabled:opacity-50">
+                              Verify Phone
+                            </button>
+                          </>
+                        )}
+                      </div>
+                    )}
+                    {phoneVerificationId && <p className="mt-2 text-xs text-emerald-600">Phone number verified.</p>}
+                    {phoneError && <p className="mt-2 text-xs text-red-500">{phoneError}</p>}
                 </div>
 
                 {/* Jewelry Type — fixed dropdown */}
@@ -238,7 +301,7 @@ export default function CustomDesign() {
                           key={metal}
                           className="inline-flex items-center gap-2 rounded-lg border border-[#E5E2DD] bg-white px-4 py-2.5 text-sm text-[#1A202C]/60 hover:border-[#D4AF37]/30 hover:text-[#1A202C] transition-all cursor-pointer has-[:checked]:border-[#D4AF37] has-[:checked]:bg-[#D4AF37]/5 has-[:checked]:text-[#D4AF37]"
                         >
-                          <input type="radio" name="metal" value={metal} className="sr-only" />
+                          <input type="radio" name="metal" value={metal} required className="sr-only" />
                           {metal}
                         </label>
                       )
@@ -307,6 +370,7 @@ export default function CustomDesign() {
                   <textarea
                     name="description"
                     rows={4}
+                    required
                     className={`${inputClass} resize-none`}
                     placeholder="Tell us about your dream piece — style, stone size, budget range, or any inspiration..."
                   />

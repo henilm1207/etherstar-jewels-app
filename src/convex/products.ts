@@ -8,10 +8,21 @@ async function withResolvedImage(
   ctx: QueryCtx,
   product: Doc<"products">,
 ): Promise<Doc<"products">> {
-  if (!product.imageStorageId) return product;
-  const url = await ctx.storage.getUrl(product.imageStorageId);
-  if (!url) return product;
-  return { ...product, imageUrl: url };
+  if (!product.imageStorageId && !product.imageStorageIds?.length) return product;
+  const url = product.imageStorageId
+    ? await ctx.storage.getUrl(product.imageStorageId)
+    : null;
+  const storageUrls = product.imageStorageIds
+    ? (await Promise.all(product.imageStorageIds.map((id) => ctx.storage.getUrl(id)))).filter(
+        (storageUrl): storageUrl is string => Boolean(storageUrl),
+      )
+    : [];
+  const images = [url, ...storageUrls, ...product.images.filter(Boolean)].filter(
+    (image): image is string => Boolean(image),
+  ).filter(
+    (image, index, all) => all.indexOf(image) === index,
+  );
+  return { ...product, imageUrl: url ?? product.imageUrl, images };
 }
 
 // Get all products with optional filtering

@@ -63,12 +63,12 @@ function WishlistSection({ id }: { id?: string }) {
         </div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-          {wishlistedProducts.map((product: { _id: string; name: string; images?: string[]; imageUrl: string; basePrice: number; metalOptions: Array<{ priceAdjustment: number }> }) => {
+          {wishlistedProducts.map((product: { _id: string; name: string; images?: string[]; imageUrl: string; basePrice: number; metalOptions: Array<{ price?: number; priceAdjustment?: number }> } | null) => {
             if (!product) return null;
             const images = (product as any).images ?? [];
             const metalOptions = (product as any).metalOptions ?? [];
             const activePrice = metalOptions.length > 0
-              ? (product as any).basePrice + metalOptions[0].priceAdjustment
+              ? metalOptions[0].price ?? (product as any).basePrice + (metalOptions[0].priceAdjustment ?? 0)
               : (product as any).basePrice;
             return (
               <Link

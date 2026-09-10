@@ -36,6 +36,7 @@ export const getCurrentUser = async (ctx: QueryCtx) => {
 // Add or remove emails here; no database edits or terminal commands needed.
 const ADMIN_EMAILS = [
   "hello@etherstarjewels.com",
+  "henil.moradiya2002@gmail.com",
 ];
 
 /**
