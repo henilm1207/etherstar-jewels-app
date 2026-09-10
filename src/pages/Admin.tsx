@@ -167,11 +167,6 @@ function ProductFormModal({
       return next;
     });
     setForm((f) => {
-      const imgs = [...f.images];
-      if (imgs.length > 0) {
-        const [movedImg] = imgs.splice(fromIndex, 1);
-        imgs.splice(toIndex, 0, movedImg);
-      }
       const ids = [...(f.imageStorageIds ?? [])];
       if (ids.length > 1) {
         const [movedId] = ids.splice(fromIndex, 1);
@@ -179,7 +174,6 @@ function ProductFormModal({
       }
       return {
         ...f,
-        images: imgs,
         imageStorageIds: ids.length > 0 ? ids : f.imageStorageIds,
       };
     });
@@ -200,13 +194,10 @@ function ProductFormModal({
   const removeUploadedImage = (index: number) => {
     setUploadedPreviews((prev) => prev.filter((_, i) => i !== index));
     setForm((f) => {
-      const imgs = [...f.images];
-      imgs.splice(index, 1);
       const ids = [...(f.imageStorageIds ?? [])];
       ids.splice(index, 1);
       return {
         ...f,
-        images: imgs,
         imageStorageIds: ids.length > 0 ? ids : undefined,
         imageStorageId: index === 0 ? ids[0] : f.imageStorageId,
       };
@@ -229,24 +220,32 @@ function ProductFormModal({
 
   const handleMetalCategoryChange = (category: MetalCategory) => {
     setForm((f) => {
-      // Cache current prices before switching
-      const cache = { ...metalPriceCache };
-      for (const opt of f.metalOptions) {
-        if (opt.price) cache[opt.metalType] = opt.price;
+      const hasCategory = f.metalOptions.some((opt) =>
+        buildMetalOptions(category).some((v) => v.metalType === opt.metalType),
+      );
+      if (hasCategory) {
+        // Remove this category's variants
+        const removeTypes = new Set(buildMetalOptions(category).map((v) => v.metalType));
+        return {
+          ...f,
+          metalOptions: f.metalOptions.filter((opt) => !removeTypes.has(opt.metalType)),
+        };
+      } else {
+        // Add this category's variants with cached prices
+        const cache = { ...metalPriceCache };
+        for (const opt of f.metalOptions) {
+          if (opt.price) cache[opt.metalType] = opt.price;
+        }
+        setMetalPriceCache(cache);
+        const newVariants = buildMetalOptions(category).map((v) => ({
+          ...v,
+          price: cache[v.metalType] ?? 0,
+        }));
+        return {
+          ...f,
+          metalOptions: [...f.metalOptions, ...newVariants],
+        };
       }
-      setMetalPriceCache(cache);
-
-      // Build new options and restore cached prices
-      const variants = buildMetalOptions(category).map((v) => ({
-        ...v,
-        price: cache[v.metalType] ?? 0,
-      }));
-      return {
-        ...f,
-        metalCategory: category,
-        metalOptions: variants,
-        metalType: variants[0]?.metalType ?? "",
-      };
     });
   };
 
@@ -297,7 +296,6 @@ function ProductFormModal({
       setUploadedPreviews((current) => [...current, ...previews]);
       setForm((f) => ({
         ...f,
-        images: [...f.images, ...previews],
         imageStorageId: f.imageStorageId ?? storageIds[0],
         imageStorageIds: [...(f.imageStorageIds ?? []), ...storageIds],
         imageUrl: f.imageUrl || previews[0],
@@ -340,11 +338,11 @@ function ProductFormModal({
     const { metalCategory, ...rest } = form;
     const cleaned = {
       ...rest,
-      images: rest.images.filter((img) => img.trim() !== ""),
+      images: [],
       metalOptions: rest.metalOptions
         .filter((m) => m.metalType.trim() !== "")
         .map(({ metalType, price }) => ({ metalType, price })),
-      imageUrl: rest.imageUrl || rest.images[0] || "",
+      imageUrl: rest.imageUrl || "",
     };
     await onSave(cleaned);
     setSaving(false);
@@ -372,6 +370,124 @@ function ProductFormModal({
         </div>
 
         <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto">
+          {/* Images */}
+          <div>
+            <label className={labelClass}>Product Images</label>
+
+            {/* Upload primary image to Convex storage */}
+            <div className="mb-4 rounded-xl border border-dashed border-[#D4AF37]/40 bg-[#D4AF37]/[0.03] p-4">
+              <div className="flex items-center justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-[#1A202C]/50">
+                    Upload Product Photos
+                  </p>
+                  <p className="text-[11px] text-[#1A202C]/35 mt-0.5">
+                    Stored in Convex file storage · Select multiple PNG, JPG, or WEBP files
+                  </p>
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  multiple
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={(e) => handleFileSelected(e.target.files ?? undefined)}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  disabled={uploading}
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#D4AF37]/50 bg-white px-4 py-2 text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/8 transition-all disabled:opacity-50"
+                >
+                  {uploading ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Upload className="h-3.5 w-3.5" />
+                  )}
+                  {uploading ? "Uploading…" : "Choose Photos"}
+                </button>
+              </div>
+              <button
+                type="button"
+                onClick={() => handleAnalyzeImage(selectedImage)}
+                disabled={uploading || analyzing}
+                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#1A202C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1A202C]/85 transition-all disabled:opacity-50"
+              >
+                {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                {analyzing ? "Analyzing image…" : "Analyze with AI"}
+              </button>
+              {uploadError && (
+                <p className="mt-2 text-xs text-red-500">{uploadError}</p>
+              )}
+              {aiError && <p className="mt-2 text-xs text-red-500">{aiError}</p>}
+              {(uploadedPreviews.length > 0 || (form.imageStorageId && form.imageUrl)) && (
+                <div className="mt-3 space-y-2">
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#1A202C]/40 mb-2">
+                    Uploaded Images ({uploadedPreviews.length}) — Drag to reorder
+                  </p>
+                  <div className="flex flex-wrap gap-3">
+                    {(uploadedPreviews.length > 0 ? uploadedPreviews : [form.imageUrl]).map((src, index) => (
+                      <div
+                        key={`${src}-${index}`}
+                        draggable
+                        onDragStart={() => handleDragStart(index)}
+                        onDragOver={(e) => handleDragOver(e, index)}
+                        onDragEnd={handleDragEnd}
+                        className={`relative group rounded-xl border-2 overflow-hidden transition-all ${
+                          dragIndex === index
+                            ? "border-[#D4AF37] shadow-lg scale-105"
+                            : "border-[#E5E2DD] hover:border-[#D4AF37]/30"
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 p-2">
+                          <div className="cursor-grab active:cursor-grabbing text-[#1A202C]/20 hover:text-[#1A202C]/50">
+                            <GripVertical className="h-4 w-4" />
+                          </div>
+                          <img
+                            src={src}
+                            alt={`Product preview ${index + 1}`}
+                            className="h-16 w-16 rounded-lg object-cover"
+                          />
+                          <div className="flex flex-col gap-0.5">
+                            <span className="text-[10px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 rounded px-1.5 py-0.5 text-center min-w-[20px]">
+                              {index + 1}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => moveUploadedImage(index, index - 1)}
+                              disabled={index === 0}
+                              className="p-0.5 text-[#1A202C]/25 hover:text-[#D4AF37] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Move up"
+                            >
+                              <ChevronUp className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => moveUploadedImage(index, index + 1)}
+                              disabled={index === uploadedPreviews.length - 1}
+                              className="p-0.5 text-[#1A202C]/25 hover:text-[#D4AF37] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
+                              aria-label="Move down"
+                            >
+                              <ChevronDown className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeUploadedImage(index)}
+                          className="absolute top-1 right-1 p-1 rounded-full bg-white/80 text-[#1A202C]/30 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                          aria-label={`Remove image ${index + 1}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
           {/* Basic Info */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="sm:col-span-2">
@@ -570,124 +686,6 @@ function ProductFormModal({
             </div>
           </div>
 
-          {/* Images */}
-          <div>
-            <label className={labelClass}>Product Images</label>
-
-            {/* Upload primary image to Convex storage */}
-            <div className="mb-4 rounded-xl border border-dashed border-[#D4AF37]/40 bg-[#D4AF37]/[0.03] p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div>
-                  <p className="text-xs font-semibold uppercase tracking-wider text-[#1A202C]/50">
-                    Upload Product Photos
-                  </p>
-                  <p className="text-[11px] text-[#1A202C]/35 mt-0.5">
-                    Stored in Convex file storage · Select multiple PNG, JPG, or WEBP files
-                  </p>
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  multiple
-                  accept="image/png,image/jpeg,image/webp"
-                  className="hidden"
-                  onChange={(e) => handleFileSelected(e.target.files ?? undefined)}
-                />
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={uploading}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-[#D4AF37]/50 bg-white px-4 py-2 text-xs font-semibold text-[#D4AF37] hover:bg-[#D4AF37]/8 transition-all disabled:opacity-50"
-                >
-                  {uploading ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Upload className="h-3.5 w-3.5" />
-                  )}
-                  {uploading ? "Uploading…" : "Choose Photos"}
-                </button>
-              </div>
-              <button
-                type="button"
-                onClick={() => handleAnalyzeImage(selectedImage)}
-                disabled={uploading || analyzing}
-                className="mt-3 inline-flex items-center gap-2 rounded-lg bg-[#1A202C] px-4 py-2 text-xs font-semibold text-white hover:bg-[#1A202C]/85 transition-all disabled:opacity-50"
-              >
-                {analyzing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                {analyzing ? "Analyzing image…" : "Analyze with AI"}
-              </button>
-              {uploadError && (
-                <p className="mt-2 text-xs text-red-500">{uploadError}</p>
-              )}
-              {aiError && <p className="mt-2 text-xs text-red-500">{aiError}</p>}
-              {(uploadedPreviews.length > 0 || (form.imageStorageId && form.imageUrl)) && (
-                <div className="mt-3 space-y-2">
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#1A202C]/40 mb-2">
-                    Uploaded Images ({uploadedPreviews.length}) — Drag to reorder
-                  </p>
-                  <div className="flex flex-wrap gap-3">
-                    {(uploadedPreviews.length > 0 ? uploadedPreviews : [form.imageUrl]).map((src, index) => (
-                      <div
-                        key={`${src}-${index}`}
-                        draggable
-                        onDragStart={() => handleDragStart(index)}
-                        onDragOver={(e) => handleDragOver(e, index)}
-                        onDragEnd={handleDragEnd}
-                        className={`relative group rounded-xl border-2 overflow-hidden transition-all ${
-                          dragIndex === index
-                            ? "border-[#D4AF37] shadow-lg scale-105"
-                            : "border-[#E5E2DD] hover:border-[#D4AF37]/30"
-                        }`}
-                      >
-                        <div className="flex items-center gap-2 p-2">
-                          <div className="cursor-grab active:cursor-grabbing text-[#1A202C]/20 hover:text-[#1A202C]/50">
-                            <GripVertical className="h-4 w-4" />
-                          </div>
-                          <img
-                            src={src}
-                            alt={`Product preview ${index + 1}`}
-                            className="h-16 w-16 rounded-lg object-cover"
-                          />
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-[10px] font-bold text-[#D4AF37] bg-[#D4AF37]/10 rounded px-1.5 py-0.5 text-center min-w-[20px]">
-                              {index + 1}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => moveUploadedImage(index, index - 1)}
-                              disabled={index === 0}
-                              className="p-0.5 text-[#1A202C]/25 hover:text-[#D4AF37] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                              aria-label="Move up"
-                            >
-                              <ChevronUp className="h-3.5 w-3.5" />
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => moveUploadedImage(index, index + 1)}
-                              disabled={index === uploadedPreviews.length - 1}
-                              className="p-0.5 text-[#1A202C]/25 hover:text-[#D4AF37] disabled:opacity-20 disabled:cursor-not-allowed transition-colors"
-                              aria-label="Move down"
-                            >
-                              <ChevronDown className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => removeUploadedImage(index)}
-                          className="absolute top-1 right-1 p-1 rounded-full bg-white/80 text-[#1A202C]/30 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                          aria-label={`Remove image ${index + 1}`}
-                        >
-                          <X className="h-3 w-3" />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
           {/* Metal Options */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -695,31 +693,35 @@ function ProductFormModal({
             </div>
 
             <div className="mb-4">
-              <label className="text-xs font-semibold text-[#1A202C]/60 block mb-1.5">Metal Type</label>
+              <label className="text-xs font-semibold text-[#1A202C]/60 block mb-1.5">Metal Types</label>
               <div className="flex gap-2">
-                {METAL_CATEGORIES.map((cat) => (
-                  <button
-                    key={cat}
-                    type="button"
-                    onClick={() => handleMetalCategoryChange(cat)}
-                    className={`flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
-                      form.metalCategory === cat
-                        ? "border-[#D4AF37] bg-[#D4AF37]/5 text-[#D4AF37]"
-                        : "border-[#E5E2DD] bg-white text-[#1A202C]/50 hover:border-[#D4AF37]/30"
-                    }`}
-                  >
-                    {cat === "Gold" && "🥇 "}
-                    {cat === "Silver" && "🥈 "}
-                    {cat === "Platinum" && "💎 "}
-                    {cat}
-                  </button>
-                ))}
+                {METAL_CATEGORIES.map((cat) => {
+                  const isActive = form.metalOptions.some((opt) =>
+                    buildMetalOptions(cat).some((v) => v.metalType === opt.metalType),
+                  );
+                  return (
+                    <button
+                      key={cat}
+                      type="button"
+                      onClick={() => handleMetalCategoryChange(cat)}
+                      className={`flex-1 rounded-lg border-2 px-4 py-2.5 text-sm font-medium transition-all ${
+                        isActive
+                          ? "border-[#D4AF37] bg-[#D4AF37]/5 text-[#D4AF37]"
+                          : "border-[#E5E2DD] bg-white text-[#1A202C]/50 hover:border-[#D4AF37]/30"
+                      }`}
+                    >
+                      {cat === "Gold" && "🥇 "}
+                      {cat === "Silver" && "🥈 "}
+                      {cat === "Platinum" && "💎 "}
+                      {cat}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
             <div className="space-y-2">
               {form.metalOptions.map((mv, i) => {
-                const isGold = form.metalCategory === "Gold";
                 const colorDot =
                   mv.color === "Yellow"
                     ? "bg-yellow-400"
@@ -732,7 +734,7 @@ function ProductFormModal({
                 return (
                   <div key={i} className="flex gap-2 items-center">
                     <div className="flex items-center gap-2 flex-1 min-w-0">
-                      {isGold && colorDot && (
+                      {colorDot && (
                         <span className={`inline-block h-3 w-3 rounded-full shrink-0 ${colorDot}`} />
                       )}
                       <span className="text-sm text-[#1A202C] truncate">{mv.metalType}</span>

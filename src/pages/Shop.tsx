@@ -13,7 +13,6 @@ import {
   Diamond,
 } from "lucide-react";
 import type { Id } from "../convex/_generated/dataModel";
-import { getMetalPrice, sortMetalOptions } from "@/lib/metals";
 import { SafeImage } from "@/components/SafeImage";
 
 /* ── filter option lists ─────────────────────────────────────────────── */
@@ -65,12 +64,6 @@ function ShopProductCard({
 }) {
   const [hoveredImage, setHoveredImage] = useState(0);
   const images = product?.images ?? [];
-  const metalOptions = sortMetalOptions(
-    (product?.metalOptions ?? []).filter((mv) => (mv.price ?? 0) > 0),
-  );
-  const [selectedMetalIdx, setSelectedMetalIdx] = useState(0);
-  const activeOption = metalOptions[selectedMetalIdx] || metalOptions[0];
-  const displayPrice = getMetalPrice(activeOption, product.basePrice);
   const displayImage = images[hoveredImage] || product.imageUrl || "";
 
   return (
@@ -116,30 +109,22 @@ function ShopProductCard({
             {product.name}
           </h3>
           <p className="mt-1.5 text-xs text-[#1A202C]/40 tracking-wider uppercase">
-            {product.carat}ct · {product.cut}
+            {product.carat}ct · {product.cut} · {product.color} · {product.clarity}
           </p>
-          <div className="flex items-center gap-1.5 mt-2">
-            {metalOptions.map((mv, i) => (
-              <button
-                key={mv.metalType}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setSelectedMetalIdx(i);
-                }}
-                className={`text-[10px] px-2 py-0.5 rounded-full border transition-all duration-200 ${
-                  i === selectedMetalIdx
-                    ? "border-[#D4AF37] bg-[#D4AF37]/8 text-[#D4AF37]"
-                    : "border-[#E5E2DD] text-[#1A202C]/30 hover:border-[#1A202C]/20 hover:text-[#1A202C]/50"
-                }`}
-              >
-                {mv.metalType.replace("Gold-Plated Silver", "Silver")}
-              </button>
-            ))}
-          </div>
-          <p className="mt-2 text-sm font-medium text-[#D4AF37]">
-            ${(displayPrice ?? 0).toLocaleString("en-US")}
+          <p className="mt-1.5 text-[10px] text-[#D4AF37]/70 tracking-wide">
+            {(() => {
+              const allMetals = (product.metalOptions ?? [])
+                .filter((mv) => (mv.price ?? 0) > 0)
+                .map((mv) => mv.metalType.toLowerCase());
+              const hasGold = allMetals.some((m) => m.includes("gold"));
+              const hasSilver = allMetals.some((m) => m.includes("silver"));
+              const hasPlatinum = allMetals.some((m) => m.includes("platinum"));
+              const parts = [];
+              if (hasGold) parts.push("Gold");
+              if (hasSilver) parts.push("Silver");
+              if (hasPlatinum) parts.push("Platinum");
+              return parts.join(" & ") || "Gold";
+            })()}
           </p>
         </div>
       </Link>

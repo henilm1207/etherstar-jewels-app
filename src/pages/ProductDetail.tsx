@@ -278,13 +278,13 @@ export default function ProductDetail() {
                 decoding="async"
                 width={800}
                 height={800}
-                className={`h-full w-full object-cover transition-opacity duration-500 ${
+                className={`h-full w-full object-contain p-4 transition-opacity duration-500 ${
                   imageLoaded ? "opacity-100" : "opacity-0"
                 }`}
                 style={
                   isZooming && imageLoaded
                     ? {
-                        transform: "scale(2)",
+                        transform: "scale(1.5)",
                         transformOrigin: `${zoomPosition.x}% ${zoomPosition.y}%`,
                         transition: "transform-origin 0.1s ease-out",
                       }

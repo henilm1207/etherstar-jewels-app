@@ -47,11 +47,10 @@ export const listAllProducts = query({
               (storageUrl): storageUrl is string => Boolean(storageUrl),
             )
           : [];
-        const images = [url, ...storageUrls, ...p.images.filter(Boolean)].filter(
-          (image): image is string => Boolean(image),
-        ).filter(
-          (image, index, all) => all.indexOf(image) === index,
-        );
+        // Use storage URLs if available, otherwise fall back to images array
+        const images = storageUrls.length > 0
+          ? storageUrls
+          : p.images.filter(Boolean);
         return {
           ...p,
           imageUrl: url ?? p.imageUrl,

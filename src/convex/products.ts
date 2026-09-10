@@ -17,11 +17,10 @@ async function withResolvedImage(
         (storageUrl): storageUrl is string => Boolean(storageUrl),
       )
     : [];
-  const images = [url, ...storageUrls, ...product.images.filter(Boolean)].filter(
-    (image): image is string => Boolean(image),
-  ).filter(
-    (image, index, all) => all.indexOf(image) === index,
-  );
+  // Use storage URLs if available, otherwise fall back to images array
+  const images = storageUrls.length > 0
+    ? storageUrls
+    : product.images.filter(Boolean);
   return { ...product, imageUrl: url ?? product.imageUrl, images };
 }
 
