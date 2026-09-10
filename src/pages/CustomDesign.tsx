@@ -103,8 +103,8 @@ export default function CustomDesign() {
       });
 
       setSubmitted(true);
-    } catch (error) {
-      console.error("Submit error:", error);
+    } catch {
+      // Submission failed - user can retry
     } finally {
       setIsLoading(false);
     }

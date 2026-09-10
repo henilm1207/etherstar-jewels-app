@@ -15,7 +15,7 @@ export function useAuth() {
   useEffect(() => {
     if (isAuthenticated && user && !roleChecked.current) {
       roleChecked.current = true;
-      ensureUserRole().catch(console.error);
+      ensureUserRole().catch(() => {});
     }
   }, [isAuthenticated, user, ensureUserRole]);
 

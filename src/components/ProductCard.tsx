@@ -101,7 +101,9 @@ function WishlistHeart({ productId }: { productId: Id<"products"> }) {
 
 export function ProductCard({ product, index = 0 }: ProductCardProps) {
   const [hoveredImage, setHoveredImage] = useState(0);
-  const metalOptions = sortMetalOptions(product?.metalOptions ?? []);
+  const metalOptions = sortMetalOptions(
+    (product?.metalOptions ?? []).filter((mv) => (mv.price ?? 0) > 0),
+  );
   const images = product?.images ?? [];
   const basePrice = product?.basePrice ?? 0;
   const defaultMetal = product?.metalType ?? "";

@@ -83,21 +83,10 @@ export const emailOtp = Email({
     }>
   ) {
     const mutationContext = context[0]!;
-    console.log("════════════════════════════════════════════");
-    console.log(`[Etherstar Auth] Preparing OTP email → to: ${email}`);
-    console.log(`[Etherstar Auth] OTP code: ${otp}`);
-    console.log(`[Etherstar Auth] From address: ${RESEND_FROM_EMAIL}`);
 
     const apiKey = process.env.RESEND_API_KEY;
-    console.log(
-      `[Etherstar Auth] RESEND_API_KEY present: ${apiKey ? "yes (length " + apiKey.length + ")" : "NO — MISSING!"}`,
-    );
 
     if (!apiKey) {
-      console.error(
-        "[Etherstar Auth] RESEND_API_KEY is not configured — using test-mode fallback.",
-      );
-      console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
       await mutationContext.runMutation(api.otpFallback.record, {
         email,
         code: otp,
@@ -114,10 +103,6 @@ export const emailOtp = Email({
       html: buildVerificationEmailHtml(otp),
     };
 
-    console.log(
-      `[Etherstar Auth] → POST ${RESEND_API_URL} | from: ${payload.from} | to: ${payload.to} | subject: ${payload.subject}`,
-    );
-
     try {
       const response = await fetch(RESEND_API_URL, {
         method: "POST",
@@ -128,38 +113,22 @@ export const emailOtp = Email({
         body: JSON.stringify(payload),
       });
 
-      console.log(
-        `[Etherstar Auth] ← Resend responded: ${response.status} ${response.statusText}`,
-      );
-
       if (!response.ok) {
-        const body = await response.text().catch(() => "(no body)");
-        console.error(
-          `Resend Error: HTTP ${response.status} ${response.statusText} — response body: ${body}`,
-        );
-        console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
-        throw new Error(`Resend rejected the verification email (${response.status}).`);
+        await mutationContext.runMutation(api.otpFallback.record, {
+          email,
+          code: otp,
+          delivered: false,
+        });
+        return;
       }
 
-      const data = await response.json().catch(() => null);
-      console.log(
-        `[Etherstar Auth] ✓ Resend accepted the email: ${JSON.stringify(data)}`,
-      );
-      console.log(
-        `[Etherstar Auth] OTP for ${email}: ${otp} (email sent successfully)`,
-      );
       await mutationContext.runMutation(api.otpFallback.record, {
         email,
         code: otp,
         delivered: true,
       });
     } catch (error) {
-      console.error("Resend Error:", error);
       const message = error instanceof Error ? error.message : String(error);
-      console.error(
-        `[Etherstar Auth] Resend request failed: ${message}`,
-      );
-      console.error(`[Etherstar Auth Fallback] OTP for ${email}: ${otp}`);
       await mutationContext.runMutation(api.otpFallback.record, {
         email,
         code: otp,

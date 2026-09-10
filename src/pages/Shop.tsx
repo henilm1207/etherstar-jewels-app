@@ -65,7 +65,9 @@ function ShopProductCard({
 }) {
   const [hoveredImage, setHoveredImage] = useState(0);
   const images = product?.images ?? [];
-  const metalOptions = sortMetalOptions(product?.metalOptions ?? []);
+  const metalOptions = sortMetalOptions(
+    (product?.metalOptions ?? []).filter((mv) => (mv.price ?? 0) > 0),
+  );
   const [selectedMetalIdx, setSelectedMetalIdx] = useState(0);
   const activeOption = metalOptions[selectedMetalIdx] || metalOptions[0];
   const displayPrice = getMetalPrice(activeOption, product.basePrice);

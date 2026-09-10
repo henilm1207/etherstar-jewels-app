@@ -39,9 +39,24 @@ export const listAllProducts = query({
     // Resolve Convex-storage images into usable URLs for display
     return Promise.all(
       products.map(async (p) => {
-        if (!p.imageStorageId) return p;
-        const url = await ctx.storage.getUrl(p.imageStorageId);
-        return url ? { ...p, imageUrl: url } : p;
+        const url = p.imageStorageId
+          ? await ctx.storage.getUrl(p.imageStorageId)
+          : null;
+        const storageUrls = p.imageStorageIds
+          ? (await Promise.all(p.imageStorageIds.map((id) => ctx.storage.getUrl(id)))).filter(
+              (storageUrl): storageUrl is string => Boolean(storageUrl),
+            )
+          : [];
+        const images = [url, ...storageUrls, ...p.images.filter(Boolean)].filter(
+          (image): image is string => Boolean(image),
+        ).filter(
+          (image, index, all) => all.indexOf(image) === index,
+        );
+        return {
+          ...p,
+          imageUrl: url ?? p.imageUrl,
+          images,
+        };
       }),
     );
   },

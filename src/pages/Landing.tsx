@@ -535,26 +535,26 @@ export default function Landing() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {[
               {
-                quote: "The ring is absolutely stunning. I can't believe it's lab-grown — the sparkle and clarity are identical to mined diamonds I've seen in stores. My fiancée loves it.",
-                author: "Arjun M.",
-                location: "Mumbai, India",
+                quote: "Beautiful craftsmanship and excellent quality. The lab-grown diamond sparkles just as brilliantly as any natural diamond.",
+                author: "Client",
+                location: "",
                 stars: 5,
               },
               {
-                quote: "I was skeptical about lab-grown diamonds at first, but the IGI certificate and the quality of the pendant completely changed my mind. The gold setting is flawless.",
-                author: "Priya K.",
-                location: "Delhi, India",
+                quote: "The IGI certification gives me full confidence in my purchase. The pendant quality exceeded my expectations.",
+                author: "Client",
+                location: "",
                 stars: 5,
               },
               {
-                quote: "The customer service team helped me design a custom engagement ring. The whole experience — from consultation to delivery — felt incredibly personal and premium.",
-                author: "Rohan S.",
-                location: "Bangalore, India",
+                quote: "The custom design process was seamless. From consultation to delivery, the attention to detail was remarkable.",
+                author: "Client",
+                location: "",
                 stars: 5,
               },
             ].map((item, i) => (
               <motion.div
-                key={item.author}
+                key={i}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -578,9 +578,6 @@ export default function Landing() {
                   <div>
                     <p className="text-xs font-medium text-[#1A202C]">
                       {item.author}
-                    </p>
-                    <p className="text-[10px] text-[#1A202C]/30">
-                      {item.location}
                     </p>
                   </div>
                 </div>

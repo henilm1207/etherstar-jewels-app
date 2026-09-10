@@ -93,7 +93,9 @@ export default function ProductDetail() {
   }, [wishlistOptimistic, isWishlisted]);
 
   const images = product?.images ?? [];
-  const sortedMetalOptions = sortMetalOptions(product?.metalOptions ?? []);
+  const sortedMetalOptions = sortMetalOptions(
+    (product?.metalOptions ?? []).filter((mv) => (mv.price ?? 0) > 0),
+  );
 
   const activeMetal =
     product && product !== null
@@ -196,7 +198,7 @@ export default function ProductDetail() {
 
   const sizeLabel = product.sizeType ?? "Size";
   const sizes = product.size
-    ? [product.size]
+    ? product.size.split(",").filter(Boolean)
     : SIZES_BY_CATEGORY[product.category] || DEFAULT_SIZES;
 
   const fourCs = [

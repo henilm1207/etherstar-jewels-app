@@ -100,19 +100,6 @@ export function Navbar() {
             >
               Bracelets
             </Link>
-            {user?.role === "admin" && (
-              <Link
-                to="/admin"
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 flex items-center gap-1.5 ${
-                  isActive("/admin")
-                    ? "text-[#D4AF37] bg-[#D4AF37]/8"
-                    : "text-[#D4AF37]/70 hover:text-[#D4AF37] hover:bg-[#D4AF37]/5"
-                }`}
-              >
-                <Shield className="h-3.5 w-3.5" />
-                Admin
-              </Link>
-            )}
           </div>
 
           {/* Right Side */}

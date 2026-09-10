@@ -104,9 +104,6 @@ export const generateAdminOtp = mutation({
     let delivered = false;
 
     if (apiKey) {
-      console.log(
-        `[Admin OTP] → POST ${RESEND_API_URL} | from: ${RESEND_FROM_EMAIL} | to: ${COMPANY_ADMIN_EMAIL}`,
-      );
       try {
         const response = await fetch(RESEND_API_URL, {
           method: "POST",
@@ -122,29 +119,12 @@ export const generateAdminOtp = mutation({
             html: buildAdminOtpEmailHtml(code),
           }),
         });
-        console.log(
-          `[Admin OTP] ← Resend responded: ${response.status} ${response.statusText}`,
-        );
         if (response.ok) {
           delivered = true;
-          console.log(
-            `[Admin OTP] ✓ Resend accepted the email (code: ${code})`,
-          );
-        } else {
-          const body = await response.text().catch(() => "(no body)");
-          console.error(
-            `Admin OTP Resend Error: HTTP ${response.status} ${response.statusText} — response body: ${body}`,
-          );
         }
       } catch (err) {
-        console.error("Admin OTP Resend Error:", err);
-        const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[Admin OTP] Resend request failed: ${msg}`);
+        // Silently fail — fallback will show code on frontend
       }
-    } else {
-      console.error(
-        "[Admin OTP] RESEND_API_KEY not configured — using fallback.",
-      );
     }
 
     // Update delivery status.
@@ -158,10 +138,6 @@ export const generateAdminOtp = mutation({
         .first();
       if (rec) await ctx.db.patch(rec._id, { delivered });
     }
-
-    console.log(
-      `[Admin OTP] Code for user ${userId} (${user.email}): ${code} (delivered: ${delivered})`,
-    );
 
     return { alreadyAdmin: false, code, delivered };
   },
@@ -207,10 +183,6 @@ export const verifyAdminOtp = mutation({
     // Code is valid — grant admin role and clean up the OTP record.
     await ctx.db.patch(userId, { role: "admin" });
     await ctx.db.delete(record._id);
-
-    console.log(
-      `[Admin OTP] Admin role granted to user ${userId} (${user.email})`,
-    );
 
     return { success: true, alreadyAdmin: false };
   },
