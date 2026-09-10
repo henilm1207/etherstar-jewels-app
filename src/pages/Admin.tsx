@@ -842,6 +842,7 @@ export default function Admin() {
   const updateProduct = useMutation(api.admin.updateProduct);
   const deleteProduct = useMutation(api.admin.deleteProduct);
   const generateUploadUrl = useMutation(api.admin.generateUploadUrl);
+  const backfillSlugs = useMutation(api.admin.backfillSlugs);
   const analyzeProductImage = useAction(api.productAi.analyzeProductImage);
   const [selectedInquiry, setSelectedInquiry] = useState<Record<string, unknown> | null>(null);
   const [inquiryImageModal, setInquiryImageModal] = useState<string | null>(null);
@@ -1012,10 +1013,19 @@ export default function Admin() {
           transition={{ delay: 0.1 }}
           className="rounded-2xl border border-[#E5E2DD] bg-white overflow-hidden"
         >
-          <div className="px-6 py-4 border-b border-[#E5E2DD]">
+          <div className="px-6 py-4 border-b border-[#E5E2DD] flex items-center justify-between">
             <h2 className="text-sm font-medium text-[#1A202C]">
               Product Inventory
             </h2>
+            <button
+              onClick={async () => {
+                const count = await backfillSlugs();
+                alert(`Backfilled ${count} product slugs`);
+              }}
+              className="text-[11px] text-[#D4AF37] hover:text-[#D4AF37]/80 underline underline-offset-4 transition-colors"
+            >
+              Backfill Slugs
+            </button>
           </div>
 
           {products === undefined ? (

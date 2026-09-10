@@ -31,10 +31,10 @@ const SIZES_BY_CATEGORY: Record<string, string[]> = {
 const DEFAULT_SIZES = ["One Size"];
 
 export default function ProductDetail() {
-  const { id } = useParams<{ id: string }>();
+  const { slug } = useParams<{ slug: string }>();
   const product = useQuery(
-    api.products.get,
-    id ? { id: id as string & { __tableName: "products" } } : "skip",
+    api.products.getBySlug,
+    slug ? { slug } : "skip",
   );
   const relatedProducts = useQuery(api.products.list, {});
   const [selectedSize, setSelectedSize] = useState<string>("");

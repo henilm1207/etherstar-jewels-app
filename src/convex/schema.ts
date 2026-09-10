@@ -41,6 +41,7 @@ const schema = defineSchema(
     // Etherstar Jewels — lab-grown diamond products
     products: defineTable({
       name: v.string(),
+      slug: v.optional(v.string()),
       description: v.string(),
       // base price before metal adjustment
       basePrice: v.number(),
@@ -101,7 +102,8 @@ const schema = defineSchema(
       .index("by_featured", ["featured"])
       .index("by_price", ["basePrice"])
       .index("by_metal", ["metalType"])
-      .index("by_carat", ["carat"]),
+      .index("by_carat", ["carat"])
+      .index("by_slug", ["slug"]),
 
     // Custom design inquiries
     inquiries: defineTable({

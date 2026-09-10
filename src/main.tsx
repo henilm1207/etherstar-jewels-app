@@ -112,7 +112,7 @@ createRoot(document.getElementById("root")!).render(
             <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/shop" element={<Shop />} />
-              <Route path="/product/:id" element={<ProductDetail />} />
+              <Route path="/product/:slug" element={<ProductDetail />} />
               <Route path="/custom-design" element={<CustomDesign />} />
               <Route
                 path="/auth"

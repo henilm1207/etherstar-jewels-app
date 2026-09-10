@@ -35,7 +35,7 @@ export const getCurrentUser = async (ctx: QueryCtx) => {
 // Admin email whitelist — any matching email is auto-promoted on every login.
 // Add or remove emails here; no database edits or terminal commands needed.
 const ADMIN_EMAILS = [
-  "hello@etherstarjewels.com",
+  "etherstarjewels@gmail.com",
   "henil.moradiya2002@gmail.com",
 ];
 

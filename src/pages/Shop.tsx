@@ -16,7 +16,7 @@ import type { Id } from "../convex/_generated/dataModel";
 import { SafeImage } from "@/components/SafeImage";
 
 /* ── filter option lists ─────────────────────────────────────────────── */
-const METAL_TYPES = ["18k Gold", "14k Gold", "10k Gold", "Gold-Plated Silver"];
+const METAL_TYPES = ["Gold", "Silver", "Platinum"];
 const CUTS = ["Ideal", "Excellent", "Very Good", "Good"];
 const COLORS = ["D", "E", "F", "G", "H", "I"];
 const CLARITIES = ["FL", "IF", "VVS1", "VVS2", "VS1", "VS2", "SI1", "SI2"];
@@ -24,7 +24,7 @@ const CARAT_RANGES = [
   { label: "Under 1ct", min: 0, max: 1 },
   { label: "1 — 2ct", min: 1, max: 2 },
   { label: "2 — 3ct", min: 2, max: 3 },
-  { label: "3ct+", min: 3, max: 100 },
+  { label: "3ct+", min: 3, max: Infinity },
 ];
 
 /* ── product interface ───────────────────────────────────────────────── */
@@ -52,6 +52,7 @@ interface Product {
   certificateUrl?: string;
   category: string;
   featured: boolean;
+  slug?: string;
 }
 
 /* ── product card — editorial light style ────────────────────────────── */
@@ -72,7 +73,7 @@ function ShopProductCard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.06 }}
     >
-      <Link to={`/product/${product._id}`} className="group block">
+      <Link to={`/product/${product.slug ?? product._id}`} className="group block">
         <div
           className="relative aspect-[4/5] overflow-hidden bg-[#F0EDE8] mb-5"
           onMouseEnter={() => setHoveredImage(Math.min(1, images.length - 1))}
@@ -258,12 +259,17 @@ export default function Shop() {
   const filteredProducts = useMemo(() => {
     if (!products) return [];
 
-    let result = products.filter((p: { metalType: string; cut: string; color: string; clarity: string; carat: number; category: string; name: string; description: string; basePrice?: number; featured?: boolean }) => {
-      if (
-        selectedMetalTypes.length > 0 &&
-        !selectedMetalTypes.includes(p.metalType)
-      )
-        return false;
+    let result = products.filter((p: { metalType: string; cut: string; color: string; clarity: string; carat: number; category: string; name: string; description: string; basePrice?: number; featured?: boolean; metalOptions?: Array<{ metalType: string; price?: number }> }) => {
+      if (selectedMetalTypes.length > 0) {
+        const productMetals = (p.metalOptions ?? [])
+          .filter((mv) => (mv.price ?? 0) > 0)
+          .map((mv) => mv.metalType.toLowerCase());
+        const hasMatch = selectedMetalTypes.some((filterType) => {
+          const ft = filterType.toLowerCase();
+          return productMetals.some((pm) => pm.includes(ft));
+        });
+        if (!hasMatch) return false;
+      }
       if (selectedCuts.length > 0 && !selectedCuts.includes(p.cut))
         return false;
       if (selectedColors.length > 0 && !selectedColors.includes(p.color))
@@ -375,14 +381,14 @@ export default function Shop() {
               setSelectedCategory("");
               setSearchParams({});
             }}
-            className={`flex items-center justify-between text-[13px] transition-colors duration-200 ${
+            className={`flex items-center justify-between text-[13px] transition-colors duration-200 w-full ${
               !selectedCategory
                 ? "text-[#D4AF37]"
                 : "text-[#1A202C]/50 hover:text-[#1A202C]/70"
             }`}
           >
             <span>All Jewelry</span>
-            <span className="text-[10px] tabular-nums">{products?.length ?? 0}</span>
+            <span className="text-[11px] tabular-nums text-[#1A202C]/30">{products?.length ?? 0}</span>
           </button>
           {categories?.map((cat: string) => {
             const count = products?.filter((p: { category: string }) => p.category === cat).length ?? 0;
@@ -397,14 +403,14 @@ export default function Shop() {
                     setSearchParams({ category: cat });
                   }
                 }}
-                className={`flex items-center justify-between text-[13px] transition-colors duration-200 ${
+                className={`flex items-center justify-between text-[13px] transition-colors duration-200 w-full ${
                   selectedCategory === cat
                     ? "text-[#D4AF37]"
                     : "text-[#1A202C]/50 hover:text-[#1A202C]/70"
                 }`}
               >
                 <span>{cat}</span>
-                <span className="text-[10px] tabular-nums opacity-50">{count}</span>
+                <span className="text-[11px] tabular-nums text-[#1A202C]/30">{count}</span>
               </button>
             );
           })}

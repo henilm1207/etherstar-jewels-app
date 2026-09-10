@@ -40,7 +40,7 @@ export function Footer() {
               and indistinguishable from mined diamonds — at a fraction of the environmental cost.
             </p>
             <div className="mt-6 flex items-center gap-4">
-              <span className="text-xs text-[#2C2A29]/30 tracking-wide">hello@etherstarjewels.com</span>
+              <span className="text-xs text-[#2C2A29]/30 tracking-wide">etherstarjewels@gmail.com</span>
               <span className="text-[#E5E2DD]">·</span>
               <span className="text-xs text-[#2C2A29]/30 tracking-wide">+91 9725756046</span>
             </div>
@@ -98,8 +98,13 @@ export function Footer() {
               Contact
             </h4>
             <ul className="space-y-3">
-              <li className="text-sm text-[#2C2A29]/45">
-                Mon — Sat, 10am — 7pm IST
+              <li>
+                <span className="block text-xs text-[#2C2A29]/30 uppercase tracking-wider mb-1">Days</span>
+                <span className="text-sm text-[#2C2A29]/45">Mon — Sat</span>
+              </li>
+              <li>
+                <span className="block text-xs text-[#2C2A29]/30 uppercase tracking-wider mb-1">Timing</span>
+                <span className="text-sm text-[#2C2A29]/45">10am — 7pm IST</span>
               </li>
               <li>
                 <Link

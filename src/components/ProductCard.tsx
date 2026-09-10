@@ -32,6 +32,7 @@ interface Product {
   certificateUrl?: string;
   category: string;
   featured: boolean;
+  slug?: string;
 }
 
 interface ProductCardProps {
@@ -109,7 +110,7 @@ export function ProductCard({ product, index = 0 }: ProductCardProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: index * 0.06 }}
     >
-      <Link to={`/product/${product._id}`} className="group block">
+      <Link to={`/product/${product.slug ?? product._id}`} className="group block">
         {/* Image with hover-cycle */}
         <div
           className="relative aspect-[4/5] overflow-hidden bg-[#F0EDE8] mb-5"

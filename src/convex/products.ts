@@ -83,6 +83,19 @@ export const get = query({
   },
 });
 
+// Get a single product by slug
+export const getBySlug = query({
+  args: { slug: v.string() },
+  handler: async (ctx, args) => {
+    const product = await ctx.db
+      .query("products")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slug))
+      .first();
+    if (!product) return null;
+    return withResolvedImage(ctx, product);
+  },
+});
+
 // Get featured products for the homepage
 export const featured = query({
   handler: async (ctx) => {

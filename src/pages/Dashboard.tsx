@@ -74,7 +74,7 @@ function WishlistSection({ id }: { id?: string }) {
             return (
               <Link
                 key={product._id}
-                to={`/product/${product._id}`}
+                to={`/product/${(product as any).slug ?? product._id}`}
                 className="group block shrink-0 w-[200px] rounded-xl border border-[#E5E2DD] overflow-hidden hover:border-[#D4AF37]/30 hover:shadow-md transition-all duration-300"
               >
                 <div className="aspect-[4/5] bg-[#F0EDE8] overflow-hidden">

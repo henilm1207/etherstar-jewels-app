@@ -1,6 +1,30 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import type { QueryCtx, MutationCtx } from "./_generated/server";
+
+function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
+async function uniqueSlug(ctx: MutationCtx, slug: string): Promise<string> {
+  let candidate = slug;
+  let n = 1;
+  while (true) {
+    const existing = await ctx.db
+      .query("products")
+      .withIndex("by_slug", (q) => q.eq("slug", candidate))
+      .first();
+    if (!existing) return candidate;
+    n++;
+    candidate = `${slug}-${n}`;
+  }
+}
 
 // Admin-only: issue a short-lived upload URL so the client can POST a file
 // directly to Convex storage. The response storageId is passed to
@@ -138,14 +162,13 @@ export const createProduct = mutation({
     const user = await ctx.db.get(userId);
     if (!user || user.role !== "admin") throw new Error("Not authorized");
 
-    // If an image was uploaded to storage, also populate imageUrl so legacy
-    // UI code (cards, hero, etc.) continues to render without changes.
     const { imageStorageId } = args;
     if (imageStorageId) {
       const url = await ctx.storage.getUrl(imageStorageId);
       if (url) args.imageUrl = url;
     }
-    return await ctx.db.insert("products", args);
+    const slug = await uniqueSlug(ctx, generateSlug(args.name));
+    return await ctx.db.insert("products", { ...args, slug });
   },
 });
 
@@ -216,10 +239,17 @@ export const updateProduct = mutation({
     if (!user || user.role !== "admin") throw new Error("Not authorized");
 
     const { id, ...updates } = args;
-    // Refresh imageUrl whenever a new storage image is attached.
     if (updates.imageStorageId) {
       const url = await ctx.storage.getUrl(updates.imageStorageId);
       if (url) updates.imageUrl = url;
+    }
+    // Regenerate slug if name changed
+    if (updates.name) {
+      const existing = await ctx.db.get(id);
+      const newSlug = generateSlug(updates.name);
+      if (existing?.slug !== newSlug) {
+        (updates as any).slug = await uniqueSlug(ctx, newSlug);
+      }
     }
     await ctx.db.patch(id, updates);
     return id;
@@ -237,5 +267,27 @@ export const deleteProduct = mutation({
 
     await ctx.db.delete(args.id);
     return args.id;
+  },
+});
+
+// Backfill slugs for existing products that don't have one
+export const backfillSlugs = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) throw new Error("Not authenticated");
+    const user = await ctx.db.get(userId);
+    if (!user || user.role !== "admin") throw new Error("Not authorized");
+
+    const products = await ctx.db.query("products").collect();
+    let count = 0;
+    for (const p of products) {
+      if (!p.slug) {
+        const slug = await uniqueSlug(ctx, generateSlug(p.name));
+        await ctx.db.patch(p._id, { slug });
+        count++;
+      }
+    }
+    return count;
   },
 });
