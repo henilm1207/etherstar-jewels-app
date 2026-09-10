@@ -1,7 +1,7 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { QueryCtx } from "./_generated/server";
-import type { Doc } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
 
 /** Resolve a product's Convex-storage image (if any) into its display imageUrl. */
 async function withResolvedImage(
@@ -91,6 +91,26 @@ export const getBySlug = query({
       .query("products")
       .withIndex("by_slug", (q) => q.eq("slug", args.slug))
       .first();
+    if (!product) return null;
+    return withResolvedImage(ctx, product);
+  },
+});
+
+// Get a single product by slug OR by _id (for links that fall back to _id)
+export const getBySlugOrId = query({
+  args: { slugOrId: v.string() },
+  handler: async (ctx, args) => {
+    // Try slug lookup first
+    let product = await ctx.db
+      .query("products")
+      .withIndex("by_slug", (q) => q.eq("slug", args.slugOrId))
+      .first();
+
+    // Fall back to _id lookup
+    if (!product) {
+      product = await ctx.db.get(args.slugOrId as Id<"products">);
+    }
+
     if (!product) return null;
     return withResolvedImage(ctx, product);
   },

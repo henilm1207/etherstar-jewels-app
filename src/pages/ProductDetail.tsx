@@ -33,8 +33,8 @@ const DEFAULT_SIZES = ["One Size"];
 export default function ProductDetail() {
   const { slug } = useParams<{ slug: string }>();
   const product = useQuery(
-    api.products.getBySlug,
-    slug ? { slug } : "skip",
+    api.products.getBySlugOrId,
+    slug ? { slugOrId: slug } : "skip",
   );
   const relatedProducts = useQuery(api.products.list, {});
   const [selectedSize, setSelectedSize] = useState<string>("");
