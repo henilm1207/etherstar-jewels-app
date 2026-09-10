@@ -205,7 +205,7 @@ export default function ProductDetail() {
   ];
 
   const related = relatedProducts
-    ? relatedProducts.filter((p) => p._id !== product._id).slice(0, 3)
+    ? relatedProducts.filter((p: { _id: string }) => p._id !== product._id).slice(0, 3)
     : [];
 
   return (
@@ -330,7 +330,7 @@ export default function ProductDetail() {
             {/* Thumbnail strip */}
             {images.length > 1 && (
               <div className="mt-4 flex gap-3 overflow-x-auto pb-1 scrollbar-hide">
-                {images.map((img, i) => (
+                {images.map((img: string, i: number) => (
                   <button
                     key={i}
                     onClick={() => goToImage(i)}
@@ -574,7 +574,7 @@ export default function ProductDetail() {
               </p>
             </motion.div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-              {related.map((p, i) => (
+              {related.map((p: { _id: string }, i: number) => (
                 <ProductCard key={p._id} product={p as any} index={i} />
               ))}
             </div>

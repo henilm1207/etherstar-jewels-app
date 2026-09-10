@@ -607,10 +607,10 @@ export default function Admin() {
 
   // Stats
   const totalProducts = products?.length ?? 0;
-  const totalStock = products?.reduce((sum, p) => sum + p.stock, 0) ?? 0;
-  const featuredCount = products?.filter((p) => p.featured).length ?? 0;
+  const totalStock = products?.reduce((sum: number, p: { stock: number }) => sum + p.stock, 0) ?? 0;
+  const featuredCount = products?.filter((p: { featured: boolean }) => p.featured).length ?? 0;
   const categories = products
-    ? Array.from(new Set(products.map((p) => p.category)))
+    ? Array.from(new Set(products.map((p: { category: string }) => p.category)))
     : [];
 
   return (
@@ -656,8 +656,8 @@ export default function Admin() {
               icon: Mail,
               label: "Inquiries",
               value: inquiries?.length ?? 0,
-              accent: (inquiries?.filter((i) => i.status === "new").length ?? 0) > 0,
-              badge: inquiries?.filter((i) => i.status === "new").length,
+              accent: (inquiries?.filter((i: { status: string }) => i.status === "new").length ?? 0) > 0,
+              badge: inquiries?.filter((i: { status: string }) => i.status === "new").length,
             },
           ].map((stat) => (
             <div
@@ -723,7 +723,7 @@ export default function Admin() {
                   </tr>
                 </thead>
                 <tbody>
-                  {products.map((product) => (
+                  {products.map((product: { _id: string; name: string; imageUrl: string; stock: number; category: string; featured: boolean; basePrice: number; metalOptions: Array<{ metalType: string; priceAdjustment: number }>; metalType: string; carat: number; cut: string; color: string; clarity: string }) => (
                     <tr
                       key={product._id}
                       className="border-b border-[#E5E2DD]/30 last:border-0 hover:bg-[#F9F8F6]/50 transition-colors"
@@ -794,14 +794,14 @@ export default function Admin() {
                         <div className="inline-flex items-center gap-1">
                           <button
                             onClick={() =>
-                              setModal({ mode: "edit", form: toForm(product), id: product._id })
+                              setModal({ mode: "edit", form: toForm(product), id: product._id as Id<"products"> })
                             }
                             className="p-1.5 rounded-lg text-[#1A202C]/30 hover:text-[#D4AF37] hover:bg-[#D4AF37]/8 transition-all"
                           >
                             <Pencil className="h-3.5 w-3.5" />
                           </button>
                           <button
-                            onClick={() => handleDelete(product._id)}
+                            onClick={() => handleDelete(product._id as Id<"products">)}
                             disabled={deleting === product._id}
                             className="p-1.5 rounded-lg text-[#1A202C]/30 hover:text-red-400 hover:bg-red-50 transition-all disabled:opacity-50"
                           >
@@ -832,9 +832,9 @@ export default function Admin() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-medium text-[#1A202C]">Custom Design Inquiries</h2>
-                {inquiries && inquiries.filter((i) => i.status === "new").length > 0 && (
+                {inquiries && inquiries.filter((i: { status: string }) => i.status === "new").length > 0 && (
                   <span className="inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-[#D4AF37] px-1.5 text-[10px] font-bold text-white">
-                    {inquiries.filter((i) => i.status === "new").length}
+                    {inquiries.filter((i: { status: string }) => i.status === "new").length}
                   </span>
                 )}
               </div>
@@ -852,7 +852,7 @@ export default function Admin() {
                 ]).map((tab) => {
                   const count = tab.key === "all"
                     ? inquiries.length
-                    : inquiries.filter((i) => i.status === tab.key).length;
+                    : inquiries.filter((i: { status: string }) => i.status === tab.key).length;
                   return (
                     <button
                       key={tab.key}
@@ -878,8 +878,8 @@ export default function Admin() {
           ) : (
             <div className="divide-y divide-[#E5E2DD]">
               {inquiries
-                .filter((inq) => inquiryFilter === "all" || inq.status === inquiryFilter)
-                .map((inq) => (
+                .filter((inq: { status: string; firstName: string; lastName: string; email: string; jewelryType: string; _id: string }) => inquiryFilter === "all" || inq.status === inquiryFilter)
+                .map((inq: { status: string; firstName: string; lastName: string; email: string; jewelryType: string; _id: string; phone?: string; metal?: string; description?: string; images?: string[] }) => (
                 <div
                   key={inq._id}
                   className="px-6 py-4 hover:bg-[#F9F8F6]/50 transition-colors cursor-pointer"

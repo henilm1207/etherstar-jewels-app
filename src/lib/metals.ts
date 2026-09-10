@@ -10,7 +10,7 @@ export const METAL_ORDER = [
  * Sort an array of metal options into the canonical display order.
  * Unknown metal types are placed at the end.
  */
-export function sortMetalOptions<T extends { metalType: string }>(
+export function sortMetalOptions<T extends { metalType: string; priceAdjustment: number }>(
   options: T[],
 ): T[] {
   return [...options].sort((a, b) => {

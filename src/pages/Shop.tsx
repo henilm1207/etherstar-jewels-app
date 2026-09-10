@@ -271,7 +271,7 @@ export default function Shop() {
   const filteredProducts = useMemo(() => {
     if (!products) return [];
 
-    let result = products.filter((p) => {
+    let result = products.filter((p: { metalType: string; cut: string; color: string; clarity: string; carat: number; category: string; name: string; description: string; basePrice?: number; featured?: boolean }) => {
       if (
         selectedMetalTypes.length > 0 &&
         !selectedMetalTypes.includes(p.metalType)
@@ -307,20 +307,20 @@ export default function Shop() {
 
     switch (sortBy) {
       case "price-low":
-        result.sort((a, b) => (a.basePrice ?? 0) - (b.basePrice ?? 0));
+        result.sort((a: { basePrice?: number }, b: { basePrice?: number }) => (a.basePrice ?? 0) - (b.basePrice ?? 0));
         break;
       case "price-high":
-        result.sort((a, b) => (b.basePrice ?? 0) - (a.basePrice ?? 0));
+        result.sort((a: { basePrice?: number }, b: { basePrice?: number }) => (b.basePrice ?? 0) - (a.basePrice ?? 0));
         break;
       case "carat-low":
-        result.sort((a, b) => a.carat - b.carat);
+        result.sort((a: { carat: number }, b: { carat: number }) => a.carat - b.carat);
         break;
       case "carat-high":
-        result.sort((a, b) => b.carat - a.carat);
+        result.sort((a: { carat: number }, b: { carat: number }) => b.carat - a.carat);
         break;
       case "featured":
       default:
-        result.sort((a, b) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
+        result.sort((a: { featured?: boolean }, b: { featured?: boolean }) => (b.featured ? 1 : 0) - (a.featured ? 1 : 0));
         break;
     }
 
@@ -397,8 +397,8 @@ export default function Shop() {
             <span>All Jewelry</span>
             <span className="text-[10px] tabular-nums">{products?.length ?? 0}</span>
           </button>
-          {categories?.map((cat) => {
-            const count = products?.filter((p) => p.category === cat).length ?? 0;
+          {categories?.map((cat: string) => {
+            const count = products?.filter((p: { category: string }) => p.category === cat).length ?? 0;
             return (
               <button
                 key={cat}
@@ -675,7 +675,7 @@ export default function Shop() {
               </motion.div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-14">
-                {filteredProducts.map((product, i) => (
+                {filteredProducts.map((product: { _id: string }, i: number) => (
           <ShopProductCard
             key={product._id}
             product={product as any}

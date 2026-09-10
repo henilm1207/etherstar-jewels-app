@@ -63,7 +63,7 @@ function WishlistSection({ id }: { id?: string }) {
         </div>
       ) : (
         <div className="flex gap-4 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
-          {wishlistedProducts.map((product) => {
+          {wishlistedProducts.map((product: { _id: string; name: string; images?: string[]; imageUrl: string; basePrice: number; metalOptions: Array<{ priceAdjustment: number }> }) => {
             if (!product) return null;
             const images = (product as any).images ?? [];
             const metalOptions = (product as any).metalOptions ?? [];
@@ -116,7 +116,7 @@ export default function Dashboard() {
   const initials = user?.name
     ? user.name
         .split(" ")
-        .map((n) => n[0])
+        .map((n: string) => n[0])
         .join("")
         .toUpperCase()
         .slice(0, 2)

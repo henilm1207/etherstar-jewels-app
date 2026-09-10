@@ -113,7 +113,7 @@ export function SearchOverlay({ open, onClose }: SearchOverlayProps) {
                         {displayResults.length} result{displayResults.length !== 1 ? "s" : ""} found
                       </p>
                       <div className="space-y-1">
-                        {displayResults.map((product) => {
+                        {displayResults.map((product: { _id: string; name: string; images?: string[]; imageUrl: string; basePrice?: number; category: string; carat: number; metalType: string }) => {
                           const firstImage =
                             product.images?.[0] || product.imageUrl || "";
                           const displayPrice = product.basePrice ?? 0;
